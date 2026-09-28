@@ -29,6 +29,13 @@
       "when": 1790596254916,
       "tag": "0003_reflective_squirrel_girl",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1790621860239,
+      "tag": "0004_awesome_doomsday",
+      "breakpoints": true
     }
   ]
 }

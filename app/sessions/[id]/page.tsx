@@ -41,7 +41,7 @@ export default async function SessionPage(props: PageProps<"/sessions/[id]">) {
         <p className="text-sm text-zinc-500">{session.company}</p>
         {session.visitorName && <p className="text-xl font-bold">{session.visitorName} 様</p>}
         <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-          本日はブースにお立ち寄りいただき、ありがとうございました。お話をもとに、課題を整理しました。
+          お話を聞かせていただき、ありがとうございます。伺った内容から課題を整理しました。このあと、課題の解決につながる展示をご案内します。
         </p>
       </header>
 

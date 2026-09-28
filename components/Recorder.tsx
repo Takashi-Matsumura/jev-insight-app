@@ -3,9 +3,10 @@
 import { Mic, Pause, Square } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { PROBES, type ProbeKey } from "@/lib/probes";
+import type { ProbeKey } from "@/lib/probes";
 import type { ChunkEvent } from "@/app/api/sessions/[id]/chunks/route";
 import { ConversationStarter } from "./ConversationStarter";
+import { ProbeCard } from "./ProbeCard";
 import { FinalizingOverlay } from "./FinalizingOverlay";
 import { DiscardedLine, InsightCard, PendingLine, type InsightItem } from "./InsightCard";
 
@@ -335,12 +336,8 @@ export function Recorder(props: {
 
         {leadScore != null && <LeadMeter score={leadScore} />}
 
-        {probe && (
-          <div className="rounded-xl bg-sky-50 p-3 text-sky-900 dark:bg-sky-950 dark:text-sky-100">
-            <p className="text-xs font-semibold">次に聞いてみる</p>
-            <p className="text-base font-medium">{PROBES[probe].question}</p>
-          </div>
-        )}
+        {/* Jev の選ぶ観点が変わったら、生成した問いかけは捨てて定型の質問に戻す */}
+        {probe && <ProbeCard key={probe} sessionId={props.sessionId} probe={probe} />}
 
         <p className="text-xs text-zinc-500">
           課題メモ {keptCount}件 ・ 破棄 {discardedCount}件

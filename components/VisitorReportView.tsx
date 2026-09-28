@@ -56,7 +56,8 @@ export function VisitorReportView({ report, items }: { report: VisitorReport; it
       </section>
 
       <section>
-        <h2 className="mb-3 text-lg font-bold">おすすめの業務改善</h2>
+        <h2 className="text-lg font-bold">おすすめの業務改善</h2>
+        <p className="mb-3 mt-1 text-sm text-zinc-500">ブース内で、それぞれに関連する展示をご案内します。</p>
         <ol className="flex flex-col gap-3">
           {report.recommendations.map((r, i) => (
             <li key={i} className="rounded-2xl border border-zinc-200 p-4 dark:border-zinc-800">
