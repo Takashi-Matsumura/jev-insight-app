@@ -1,0 +1,29 @@
+services:
+  jev-insight:
+    build: .
+    image: jev-insight-app:latest
+    container_name: jev-insight-app
+    restart: unless-stopped
+    # ホストの 127.0.0.1 にだけ公開する（外部からは Cloudflare Tunnel 経由でアクセスする）
+    ports:
+      - "127.0.0.1:3200:3000"
+    # TYPESAFE_API_KEY などは .env.local に書く
+    env_file:
+      - path: .env.local
+        required: false
+    environment:
+      - WHISPER_URL=${WHISPER_URL:-http://host.docker.internal:8090}
+      - GEMMA_URL=${GEMMA_URL:-http://host.docker.internal:8080}
+      - DATABASE_PATH=/app/data/insight.db
+      # Node の fetch に HTTP(S)_PROXY を使わせる（社内プロキシ配下で Jev に届くように）
+      - NODE_USE_ENV_PROXY=1
+      - NO_PROXY=localhost,127.0.0.1,host.docker.internal
+      - no_proxy=localhost,127.0.0.1,host.docker.internal
+    volumes:
+      - ./data:/app/data
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
