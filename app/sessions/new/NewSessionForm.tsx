@@ -1,7 +1,8 @@
 "use client";
 
-import { CircleCheck, QrCode, RefreshCw } from "lucide-react";
+import { CircleCheck, RefreshCw } from "lucide-react";
 import { useActionState, useCallback, useState, useSyncExternalStore } from "react";
+import { QrIcon } from "@/components/QrIcon";
 import { QrScanner } from "@/components/QrScanner";
 import { parseBadge } from "@/lib/badge";
 import { createSession, type CreateState } from "./actions";
@@ -63,7 +64,7 @@ export function NewSessionForm() {
             </>
           ) : (
             <>
-              <QrCode className="size-20" strokeWidth={1.25} aria-hidden />
+              <QrIcon className="size-20" strokeWidth={1.25} aria-hidden />
               <span className="font-semibold leading-snug">
                 来場者バッジの
                 <br />
