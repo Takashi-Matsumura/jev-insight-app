@@ -1,0 +1,1 @@
+ALTER TABLE `sessions` ADD `badge_code` text DEFAULT '' NOT NULL;

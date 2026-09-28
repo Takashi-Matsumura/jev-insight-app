@@ -1,0 +1,46 @@
+import { sql } from "drizzle-orm";
+import { index, integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import type { Summary } from "../gemma-schema";
+
+export const sessions = sqliteTable("sessions", {
+  id: text("id").primaryKey(),
+  company: text("company").notNull(),
+  visitorName: text("visitor_name").notNull().default(""),
+  // 来場者バッジのQRコードの中身（主催者の来場者データと突き合わせるためのキー）
+  badgeCode: text("badge_code").notNull().default(""),
+  department: text("department").notNull().default(""),
+  position: text("position").notNull().default(""),
+  email: text("email").notNull().default(""),
+  staffName: text("staff_name").notNull().default(""),
+  memo: text("memo").notNull().default(""),
+  consentAt: integer("consent_at", { mode: "timestamp" }).notNull(),
+  status: text("status", { enum: ["recording", "finalized"] }).notNull().default("recording"),
+  // 前のチャンクで文末まで届かなかった文字起こし
+  pendingText: text("pending_text").notNull().default(""),
+  nextProbe: text("next_probe"),
+  leadScore: real("lead_score"),
+  leadGrade: text("lead_grade", { enum: ["A", "B", "C"] }),
+  summary: text("summary", { mode: "json" }).$type<Summary>(),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+  finalizedAt: integer("finalized_at", { mode: "timestamp" }),
+});
+
+// Jev が「課題に関係あり」と判定した発話だけを保存する
+export const utterances = sqliteTable("utterances", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  sessionId: text("session_id")
+    .notNull()
+    .references(() => sessions.id, { onDelete: "cascade" }),
+  text: text("text").notNull(),
+  relevance: real("relevance").notNull(),
+  topic: text("topic").notNull(),
+  signal: text("signal").notNull(),
+  severity: real("severity").notNull(),
+  budgetSignal: real("budget_signal").notNull(),
+  timelineSignal: real("timeline_signal").notNull(),
+  decisionMakerSignal: real("decision_maker_signal").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+}, (t) => [index("utterances_session_id_idx").on(t.sessionId)]);
+
+export type Session = typeof sessions.$inferSelect;
+export type Utterance = typeof utterances.$inferSelect;
