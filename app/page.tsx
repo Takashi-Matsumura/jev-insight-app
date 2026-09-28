@@ -3,7 +3,7 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { TopicBadge } from "@/components/TopicBadge";
 import { getDb, schema } from "@/lib/db";
-import { TOPIC_KEYS, TOPICS, type Topic } from "@/lib/topics";
+import { displayCompany, TOPIC_KEYS, TOPICS, type Topic } from "@/lib/topics";
 
 const GRADE_ORDER = { A: 0, B: 1, C: 2 } as const;
 
@@ -60,7 +60,7 @@ export default async function Home(props: PageProps<"/">) {
                 {s.leadGrade ?? (s.status === "recording" ? "…" : "-")}
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block truncate font-semibold">{s.company}</span>
+                <span className="block truncate font-semibold">{displayCompany(s.company)}</span>
                 <span className="block truncate text-sm text-zinc-500">
                   {[s.visitorName, s.department, s.position].filter(Boolean).join(" / ")}
                 </span>

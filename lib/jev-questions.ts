@@ -37,6 +37,16 @@ export const UTTERANCE_QUESTIONS = {
       false: "あいさつ、お礼、名刺交換、雑談、天気、展示物の場所案内、相づちだけ、聞き取れない断片",
     },
   },
+  is_visitor_situation: {
+    type: "noul",
+    instructions:
+      "『utterance』は、来場者が自分の会社・団体の状況、困りごと、計画、体制を説明している発言か？" +
+      "出展者（ブース担当者）が来場者に質問している発言や、質問を読み上げている発言、一般論は false。",
+    criteria: {
+      true: "来場者が自社の現状・困りごと・予定・体制を述べている",
+      false: "相手への質問（〜ですか？〜でしょうか）、聞き返し、出展者側の説明、一般論",
+    },
+  },
   topic: {
     type: "choice",
     instructions: "『utterance』の発言は、どの領域の話題に最も近いか？",
@@ -75,6 +85,7 @@ export const UTTERANCE_QUESTIONS = {
   },
 } satisfies {
   is_business_relevant: NoulQuestion;
+  is_visitor_situation: NoulQuestion;
   topic: ChoiceQuestion<Topic>;
   signal: ChoiceQuestion<Signal>;
   severity: ScoreQuestion;

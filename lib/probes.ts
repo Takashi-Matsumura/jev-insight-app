@@ -37,3 +37,30 @@ export const PROBES = {
 } as const;
 
 export type ProbeKey = keyof typeof PROBES;
+
+const normalize = (s: string) => s.replace(/（[^）]*）|\([^)]*\)|[\s、。，．,.!?！？・…「」]/g, "");
+
+function bigrams(s: string) {
+  const out = new Map<string, number>();
+  for (let i = 0; i < s.length - 1; i++) out.set(s.slice(i, i + 2), (out.get(s.slice(i, i + 2)) ?? 0) + 1);
+  return out;
+}
+
+// 文字の2つ組の一致率（Dice 係数）。0〜1
+function similarity(a: string, b: string) {
+  const x = bigrams(a);
+  const y = bigrams(b);
+  let common = 0;
+  for (const [k, n] of x) common += Math.min(n, y.get(k) ?? 0);
+  const total = Math.max(1, a.length - 1) + Math.max(1, b.length - 1);
+  return (2 * common) / total;
+}
+
+// 画面に出した深掘り質問を、ブース担当者が読み上げた発言かどうか
+export function looksLikeProbe(text: string) {
+  const t = normalize(text);
+  return Object.values(PROBES).some((p) => {
+    const q = normalize(p.question);
+    return q.includes(t) || similarity(t, q) >= 0.6;
+  });
+}

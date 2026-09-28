@@ -8,13 +8,20 @@ import { getDb, schema } from "@/lib/db";
 
 const field = (max: number) => z.string().trim().max(max).default("");
 
-const inputSchema = z.object({
-  company: z.string().trim().min(1, "会社名を入力してください").max(200),
-  visitorName: z.string().trim().min(1, "お名前を入力してください").max(100),
-  badgeCode: field(4096),
-  staffName: field(100),
-  consent: z.literal("on", { error: "録音の同意を確認してください" }),
-});
+// QR を読み取った場合は、会社名・氏名は後から主催者データで補えるので省略できる
+const inputSchema = z
+  .object({
+    company: field(200),
+    visitorName: field(100),
+    badgeCode: field(4096),
+    staffName: field(100),
+    consent: z.literal("on", { error: "録音の同意を確認してください" }),
+  })
+  .superRefine((v, ctx) => {
+    if (v.badgeCode) return;
+    if (!v.company) ctx.addIssue({ code: "custom", message: "QRを読み取るか、会社名を入力してください" });
+    else if (!v.visitorName) ctx.addIssue({ code: "custom", message: "お名前を入力してください" });
+  });
 
 export type CreateState = { error?: string };
 

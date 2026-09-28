@@ -30,3 +30,7 @@ export function topicLabel(topic: string | null | undefined) {
 export function signalLabel(signal: string | null | undefined) {
   return SIGNALS[signal as Signal] ?? signal ?? "-";
 }
+
+export function displayCompany(company: string) {
+  return company || "会社名未入力（QRのみ）";
+}

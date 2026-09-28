@@ -62,10 +62,12 @@ export function NewSessionForm() {
       )}
 
       <label className="flex flex-col gap-1 text-sm font-medium">
-        会社・団体名
+        <span>
+          会社・団体名{badgeCode && <span className="ml-1 text-xs font-normal text-zinc-500">（QR読み取り済みのため省略可）</span>}
+        </span>
         <input
           name="company"
-          required
+          required={!badgeCode}
           value={company}
           onChange={(e) => setCompany(e.target.value)}
           className={inputClass}
@@ -73,10 +75,12 @@ export function NewSessionForm() {
         />
       </label>
       <label className="flex flex-col gap-1 text-sm font-medium">
-        お名前
+        <span>
+          お名前{badgeCode && <span className="ml-1 text-xs font-normal text-zinc-500">（省略可）</span>}
+        </span>
         <input
           name="visitorName"
-          required
+          required={!badgeCode}
           value={name}
           onChange={(e) => setName(e.target.value)}
           className={inputClass}

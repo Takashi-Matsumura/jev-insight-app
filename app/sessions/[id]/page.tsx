@@ -8,6 +8,7 @@ import { TopicBadge } from "@/components/TopicBadge";
 import type { Summary } from "@/lib/gemma-schema";
 import { getSession, listUtterances } from "@/lib/pipeline";
 import type { ProbeKey } from "@/lib/probes";
+import { displayCompany } from "@/lib/topics";
 
 export default async function SessionPage(props: PageProps<"/sessions/[id]">) {
   await connection();
@@ -22,7 +23,7 @@ export default async function SessionPage(props: PageProps<"/sessions/[id]">) {
         ← 一覧へ
       </Link>
       <header className="mb-2 mt-2">
-        <h1 className="text-xl font-bold">{session.company}</h1>
+        <h1 className="text-xl font-bold">{displayCompany(session.company)}</h1>
         <p className="text-sm text-zinc-500">
           {[session.visitorName, session.department, session.position].filter(Boolean).join(" / ")}
         </p>
@@ -32,7 +33,9 @@ export default async function SessionPage(props: PageProps<"/sessions/[id]">) {
       </header>
 
       {session.status === "recording" ? (
-        <Recorder sessionId={id} initialItems={items} initialProbe={session.nextProbe as ProbeKey | null} />
+        <Recorder sessionId={id} initialItems={items} initialProbe={session.nextProbe as ProbeKey | null}
+          initialLeadScore={session.leadScore}
+        />
       ) : (
         <div className="flex flex-col gap-6">
           <section className="flex items-center gap-3 rounded-xl bg-zinc-100 p-4 dark:bg-zinc-900">

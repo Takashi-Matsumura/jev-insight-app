@@ -3,14 +3,59 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { PROBES, type ProbeKey } from "@/lib/probes";
-import { InsightCard, type InsightItem } from "./InsightCard";
+import type { ChunkEvent } from "@/app/api/sessions/[id]/chunks/route";
+import { DiscardedLine, InsightCard, PendingLine, type InsightItem } from "./InsightCard";
 
-// 12秒ごとに録音を区切り、それぞれを単体で変換できる音声ファイルとして順番に送信する。
+// 8秒ごとに録音を区切り、それぞれを単体で変換できる音声ファイルとして順番に送信する。
 // （MediaRecorder の timeslice で分けた断片は、2つ目以降にヘッダが無く単体では変換できない）
-const CHUNK_MS = 12_000;
+const CHUNK_MS = 8_000;
 const MAX_ATTEMPTS = 3;
 
-type ChunkResponse = { kept: InsightItem[]; discarded: number; nextProbe: ProbeKey | null };
+// 画面に流す1行。文字起こし直後は judging、Jev の判定後に kept / discarded になる
+type Entry = { key: string; seq: number } & (
+  | { kind: "kept"; item: InsightItem }
+  | { kind: "judging" | "failed"; text: string }
+  | { kind: "discarded"; text: string; relevance: number; reason: string }
+);
+
+// ストリームで返る NDJSON を1行ずつ読む
+async function* readEvents(res: Response): AsyncGenerator<ChunkEvent> {
+  const reader = res.body!.pipeThrough(new TextDecoderStream()).getReader();
+  let buf = "";
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buf += value;
+    let nl;
+    while ((nl = buf.indexOf("\n")) >= 0) {
+      const line = buf.slice(0, nl).trim();
+      buf = buf.slice(nl + 1);
+      if (line) yield JSON.parse(line) as ChunkEvent;
+    }
+  }
+}
+
+function LeadMeter({ score }: { score: number }) {
+  const hint = score >= 2.3 ? "十分に具体的です。終了してまとめられます" : score >= 1.3 ? "課題は見えてきました" : "まだ漠然としています";
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center gap-3">
+        <span className="shrink-0 text-xs text-zinc-500">課題の具体度</span>
+        <span className="h-2 flex-1 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
+          <span
+            className={`block h-full rounded-full ${score >= 2.3 ? "bg-emerald-500" : score >= 1.3 ? "bg-amber-500" : "bg-zinc-400"}`}
+            style={{ width: `${Math.min(100, (score / 3) * 100)}%` }}
+          />
+        </span>
+        <span className="shrink-0 font-mono text-sm font-bold tabular-nums">
+          {score.toFixed(2)}
+          <span className="font-normal text-zinc-400"> / 3</span>
+        </span>
+      </div>
+      <p className="text-xs text-zinc-500">{hint}</p>
+    </div>
+  );
+}
 
 function pickMimeType() {
   for (const t of ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"]) {
@@ -43,11 +88,15 @@ export function Recorder(props: {
   sessionId: string;
   initialItems: InsightItem[];
   initialProbe: ProbeKey | null;
+  initialLeadScore: number | null;
 }) {
   const router = useRouter();
-  const [items, setItems] = useState(props.initialItems);
+  const [feed, setFeed] = useState<Entry[]>(() =>
+    props.initialItems.map((item) => ({ key: `i${item.id}`, seq: 0, kind: "kept", item })),
+  );
+  const [pendingText, setPendingText] = useState("");
   const [probe, setProbe] = useState(props.initialProbe);
-  const [discarded, setDiscarded] = useState(0);
+  const [leadScore, setLeadScore] = useState(props.initialLeadScore);
   const [recording, setRecording] = useState(false);
   const [started, setStarted] = useState(props.initialItems.length > 0);
   const [queued, setQueued] = useState(0);
@@ -65,22 +114,43 @@ export function Recorder(props: {
   const upload = useCallback(
     async (blob: Blob, seq: number) => {
       const ext = blob.type.includes("mp4") ? "m4a" : "webm";
+      const replace = (entries: Entry[]) => setFeed((prev) => [...prev.filter((e) => e.seq !== seq), ...entries]);
+
       for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
         try {
           const form = new FormData();
           form.append("audio", blob, `chunk-${seq}.${ext}`);
           const res = await fetch(`/api/sessions/${props.sessionId}/chunks`, { method: "POST", body: form });
-          const body = await res.json();
-          if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`);
-          const data = body as ChunkResponse;
-          setItems((prev) => [...prev, ...data.kept]);
-          setDiscarded((n) => n + data.discarded);
-          if (data.nextProbe) setProbe(data.nextProbe);
+          if (!res.ok || !res.body) {
+            const body = await res.json().catch(() => ({}));
+            throw new Error(body.error ?? `HTTP ${res.status}`);
+          }
+          for await (const ev of readEvents(res)) {
+            if (ev.type === "error") throw new Error(ev.error);
+            if (ev.type === "transcript") {
+              // 文字起こしが届いた時点で表示し、判定中であることを見せる
+              replace(ev.sentences.map((text, i) => ({ key: `${seq}-${i}`, seq, kind: "judging", text })));
+              setPendingText(ev.pending);
+            } else {
+              replace(
+                ev.results.map((r, i): Entry =>
+                  r.kept
+                    ? { key: `${seq}-${i}`, seq, kind: "kept", item: r.kept }
+                    : { key: `${seq}-${i}`, seq, kind: "discarded", text: r.text, relevance: r.relevance, reason: r.reason },
+                ),
+              );
+              setPendingText(ev.pending);
+              if (ev.nextProbe) setProbe(ev.nextProbe as ProbeKey);
+              if (ev.leadScore != null) setLeadScore(ev.leadScore);
+            }
+          }
           setError(null);
           return;
         } catch (e) {
-          if (attempt === MAX_ATTEMPTS) setError(`送信に失敗しました（${(e as Error).message}）`);
-          else await new Promise((r) => setTimeout(r, 1000 * attempt));
+          if (attempt === MAX_ATTEMPTS) {
+            setFeed((prev) => prev.map((x) => (x.seq === seq && x.kind === "judging" ? { ...x, kind: "failed" } : x)));
+            setError(`送信に失敗しました（${(e as Error).message}）`);
+          } else await new Promise((r) => setTimeout(r, 1000 * attempt));
         }
       }
     },
@@ -175,6 +245,9 @@ export function Recorder(props: {
     [stopStream],
   );
 
+  const keptCount = feed.filter((e) => e.kind === "kept").length;
+  const discardedCount = feed.filter((e) => e.kind === "discarded").length;
+
   return (
     <div className="flex flex-col gap-4">
       <div className="sticky top-0 z-10 -mx-4 flex flex-col gap-3 bg-background/95 px-4 py-3 backdrop-blur">
@@ -202,6 +275,8 @@ export function Recorder(props: {
           </button>
         </div>
 
+        {leadScore != null && <LeadMeter score={leadScore} />}
+
         {probe && (
           <div className="rounded-xl bg-sky-50 p-3 text-sky-900 dark:bg-sky-950 dark:text-sky-100">
             <p className="text-xs font-semibold">次に聞いてみる</p>
@@ -210,18 +285,25 @@ export function Recorder(props: {
         )}
 
         <p className="text-xs text-zinc-500">
-          課題メモ {items.length}件 ・ 関係ない発言として破棄 {discarded}件
+          課題メモ {keptCount}件 ・ 破棄 {discardedCount}件
           {queued > 0 && ` ・ 処理中 ${queued}件`}
         </p>
         {error && <p className="text-sm text-rose-600">{error}</p>}
       </div>
 
       <ul className="flex flex-col-reverse gap-2">
-        {items.map((item) => (
-          <InsightCard key={item.id} item={item} />
-        ))}
+        {feed.map((e) =>
+          e.kind === "kept" ? (
+            <InsightCard key={e.key} item={e.item} />
+          ) : e.kind === "discarded" ? (
+            <DiscardedLine key={e.key} text={e.text} relevance={e.relevance} reason={e.reason} />
+          ) : (
+            <PendingLine key={e.key} text={e.text} label={e.kind === "judging" ? "Jev 判定中…" : "送信失敗"} />
+          ),
+        )}
+        {pendingText && <PendingLine text={pendingText} label="聞き取り中…" />}
       </ul>
-      {items.length === 0 && (
+      {feed.length === 0 && !pendingText && (
         <p className="py-6 text-center text-sm text-zinc-500">課題に関係する発言があると、ここに表示されます</p>
       )}
     </div>
