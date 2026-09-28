@@ -28,6 +28,7 @@ ${TOPIC_GUIDE}
 const VISITOR_PROMPT = `あなたは企業の業務改善に詳しいコンサルタントです。
 展示会ブースで来場者が話した内容（課題に関係する発言だけ）が渡されます。
 来場者本人に画面で見せる「今日のお話のまとめ」を、日本語の丁寧語（です・ます調）で作成してください。
+このまとめは会話の締めくくりではなく、このあとブース担当者がおすすめのソリューション展示へご案内するための導入です。
 
 目的: 来場者が自分では言葉にできていなかった課題に気づき、「なるほど」と思えること。
 
@@ -44,7 +45,7 @@ const VISITOR_PROMPT = `あなたは企業の業務改善に詳しいコンサ�
 ${TOPIC_GUIDE}
   - title は改善の方向性（例:「業務の属人化をなくす仕組みづくり」）。製品名は出さない。
   - why はその改善が課題にどう効くか。first_step は明日からでもできる最初の一歩。
-- message: 締めくくりの前向きな一言（1〜2文）。
+- message: このあとのご案内につなげる一言（1〜2文）。整理した課題に触れ、「関連する展示をご覧いただきながら、解決の方向性を一緒に考えましょう」のように案内へ誘う。お別れやお礼の言葉で終わらせない。
 - 発言にない事実（数字・固有名詞など）を作らない。`;
 
 const completionSchema = z.object({
@@ -100,4 +101,39 @@ export function summarize(session: Session, items: Utterance[]): Promise<Summary
 // 来場者向け（会話終了後の画面に表示）
 export function writeVisitorReport(session: Session, items: Utterance[]): Promise<VisitorReport> {
   return generate(visitorReportSchema, "visitor_report", VISITOR_PROMPT, conversationContent(session, items));
+}
+
+const QUESTION_PROMPT = `あなたは展示会ブースで来場者の課題を聞き出すのが上手な担当者です。
+来場者がこれまでに話した内容（課題に関係する発言）と、次に確かめたい「ねらい」が渡されます。
+ブース担当者が来場者にそのまま投げかけられる問いかけを1つ作ってください。
+
+ルール:
+- 日本語の丁寧語で、60字以内の1文。答えやすい具体的な聞き方にする。
+- 来場者の発言の言葉を1つ以上取り入れ、「ちゃんと聞いてくれている」と感じる問いにする。
+- はい／いいえで終わらない、話が広がる聞き方にする。
+- avoid にある問いかけと同じ内容・似た言い回し・同じ書き出しは使わない。
+- 発言が複数あるときは、avoid の問いかけでまだ触れていない発言を優先して取り上げる。
+- ねらいから外れない。ねらいが「予算」なら予算、「時期」なら時期を聞く。
+- 製品やサービスの売り込みはしない。`;
+
+const questionSchema = z.object({ question: z.string() });
+
+// 「別の問いかけ」: 会話の内容とねらいに合わせた問いかけを作る
+export async function generateQuestion(
+  session: Session,
+  items: Utterance[],
+  aim: string,
+  avoid: string[],
+): Promise<string> {
+  const user = JSON.stringify(
+    {
+      発言: items.map((u) => u.text),
+      ねらい: aim,
+      avoid,
+    },
+    null,
+    2,
+  );
+  const { question } = await generate(questionSchema, "question", QUESTION_PROMPT, user);
+  return question.trim();
 }

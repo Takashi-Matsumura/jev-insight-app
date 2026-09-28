@@ -2,10 +2,10 @@ import "server-only";
 import { asc, desc, eq } from "drizzle-orm";
 import { getDb, schema } from "./db";
 import type { Session, Utterance } from "./db/schema";
-import { summarize, writeVisitorReport } from "./gemma";
+import { generateQuestion, summarize, writeVisitorReport } from "./gemma";
 import { systemOne } from "./jev";
 import { LEAD_QUESTIONS, leadGrade, PROBE_QUESTIONS, SETTING, UTTERANCE_QUESTIONS } from "./jev-questions";
-import { looksLikeProbe } from "./probes";
+import { looksLikeProbe, PROBES, type ProbeKey } from "./probes";
 import { splitSentences, transcribe } from "./whisper";
 
 const RELEVANCE_THRESHOLD = Number(process.env.RELEVANCE_THRESHOLD ?? 0.5);
@@ -60,13 +60,14 @@ async function classifyAndStore(session: Session, sentences: string[]): Promise<
     .orderBy(desc(schema.utterances.id))
     .limit(2);
   const history = [...recent.reverse().map((r) => r.text), ...sentences];
+  const askedTexts = session.askedQuestions.map((q) => q.question);
   const offset = history.length - sentences.length;
 
   const judged = await Promise.all(
     sentences.map(async (text, i) => {
       // 短すぎる断片と、画面の「次に聞いてみる」を読み上げた声は Jev に送らずに捨てる
       if (text.replace(/[\s、。！？!?,.・…]/g, "").length < MIN_CHARS) return { text, reason: "too_short" as const };
-      if (looksLikeProbe(text)) return { text, reason: "probe_echo" as const };
+      if (looksLikeProbe(text, askedTexts)) return { text, reason: "probe_echo" as const };
       const a = await systemOne(
         {
           setting: SETTING,
@@ -152,6 +153,34 @@ export async function processChunk(
     ? await updateInsights(sessionId)
     : { nextProbe: session.nextProbe, leadScore: session.leadScore };
   return { results, pending: rest, ...insights };
+}
+
+// 「別の問いかけ」: 画面の質問が会話の参考にならないときに、別の観点の問いかけを作る。
+// どの観点を聞くかは Jev の確率で選び（表示中・最近使った観点は除く）、文面は gemma4 が会話に合わせて作る
+export async function alternativeQuestion(sessionId: string, currentQuestion: string) {
+  const session = await getSession(sessionId);
+  if (!session) throw new SessionStateError("会話が見つかりません");
+  if (session.status !== "recording") throw new SessionStateError("この会話はすでに終了しています");
+  const items = await listUtterances(sessionId);
+  if (items.length === 0) throw new SessionStateError("まだ課題に関係する発言がありません");
+
+  const { next_probe } = await systemOne(findingsState(items), PROBE_QUESTIONS);
+  const recentSlots = session.askedQuestions.slice(-3).map((q) => q.slot);
+  const exclude = new Set<string>(["enough", session.nextProbe ?? "", ...recentSlots]);
+  const ranked = (Object.entries(next_probe.probabilities) as [ProbeKey, number][])
+    .filter(([k]) => k in PROBES && k !== "enough")
+    .sort((a, b) => b[1] - a[1]);
+  // 候補を使い切ったら、表示中の観点以外から選び直す
+  const slot = (ranked.find(([k]) => !exclude.has(k)) ?? ranked.find(([k]) => k !== session.nextProbe) ?? ranked[0])[0];
+
+  const avoid = [currentQuestion, ...session.askedQuestions.map((q) => q.question)].filter(Boolean);
+  const question = await generateQuestion(session, items, PROBES[slot].criterion, avoid);
+
+  await getDb()
+    .update(schema.sessions)
+    .set({ askedQuestions: [...session.askedQuestions, { question, slot }].slice(-20) })
+    .where(eq(schema.sessions.id, sessionId));
+  return { question, slot };
 }
 
 // 会話終了: 残りの文字起こしを処理し、Jev で商談見込み、gemma4 で課題まとめを作る。

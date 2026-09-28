@@ -1,0 +1,1 @@
+ALTER TABLE `sessions` ADD `asked_questions` text DEFAULT '[]' NOT NULL;

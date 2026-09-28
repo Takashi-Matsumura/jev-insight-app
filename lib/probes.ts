@@ -59,9 +59,9 @@ function similarity(a: string, b: string) {
 }
 
 // 画面に出した質問（深掘り・話しはじめ）を、ブース担当者が読み上げた発言かどうか
-export function looksLikeProbe(text: string) {
+export function looksLikeProbe(text: string, extraQuestions: string[] = []) {
   const t = normalize(text);
-  return [...Object.values(PROBES).map((p) => p.question), ...OPENING_QUESTIONS].some((question) => {
+  return [...Object.values(PROBES).map((p) => p.question), ...OPENING_QUESTIONS, ...extraQuestions].some((question) => {
     const q = normalize(question);
     return q.includes(t) || similarity(t, q) >= 0.6;
   });

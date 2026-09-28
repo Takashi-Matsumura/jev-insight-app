@@ -18,6 +18,11 @@ export const sessions = sqliteTable("sessions", {
   // 前のチャンクで文末まで届かなかった文字起こし
   pendingText: text("pending_text").notNull().default(""),
   nextProbe: text("next_probe"),
+  // 「別の問いかけ」で生成して画面に出した質問（読み上げの除外と、観点の重複を避けるために使う）
+  askedQuestions: text("asked_questions", { mode: "json" })
+    .$type<{ question: string; slot: string }[]>()
+    .notNull()
+    .default([]),
   leadScore: real("lead_score"),
   leadGrade: text("lead_grade", { enum: ["A", "B", "C"] }),
   // ブース担当者向けのリードデータ（来場者には見せない）
