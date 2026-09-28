@@ -1,0 +1,1 @@
+CREATE INDEX `utterances_session_id_idx` ON `utterances` (`session_id`);
