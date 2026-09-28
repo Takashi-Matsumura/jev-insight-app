@@ -1,0 +1,1 @@
+ALTER TABLE `sessions` ADD `visitor_report` text;

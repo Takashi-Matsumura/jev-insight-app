@@ -1,6 +1,6 @@
 import type { ChoiceQuestion, NoulQuestion, ScoreQuestion } from "./jev";
 import { PROBES, type ProbeKey } from "./probes";
-import type { Signal, Topic } from "./topics";
+import { TOPICS, type Signal, type Topic } from "./topics";
 
 // Jev に投げる質問の定義。instructions / criteria は日本語で書く。
 
@@ -8,14 +8,9 @@ export const SETTING =
   "展示会の出展ブースで、出展企業の担当者と来場者（企業・団体の社員）が話している会話の文字起こし。" +
   "出展企業は AI・DX・セキュリティ・人材開発・インフラ などの製品やサービスを提供している。";
 
-const TOPIC_CRITERIA: Record<Topic, string> = {
-  ai: "生成AI・機械学習・チャットボット・業務の自動判定など AI の活用に関する話",
-  dx: "紙やExcel・手作業の業務のデジタル化、業務プロセス改善、システム刷新、データ活用",
-  security: "情報漏えい、サイバー攻撃、ランサムウェア、アクセス管理、セキュリティ教育・監査",
-  hr_development: "人材育成、研修、採用、スキル不足、人手不足、組織づくり、リスキリング",
-  infrastructure: "サーバ、ネットワーク、クラウド移行、PC・端末管理、老朽化した設備や基盤の運用",
-  other_business: "上のどれにも当てはまらない、事業・業務上の課題や要望",
-};
+const TOPIC_CRITERIA = Object.fromEntries(
+  Object.entries(TOPICS).map(([k, v]) => [k, v.description]),
+) as Record<Topic, string>;
 
 const SIGNAL_CRITERIA: Record<Signal, string> = {
   pain_point: "困っていること・うまくいっていないこと・不満",

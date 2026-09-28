@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { PROBES, type ProbeKey } from "@/lib/probes";
 import type { ChunkEvent } from "@/app/api/sessions/[id]/chunks/route";
+import { FinalizingOverlay } from "./FinalizingOverlay";
 import { DiscardedLine, InsightCard, PendingLine, type InsightItem } from "./InsightCard";
 
 // 8秒ごとに録音を区切り、それぞれを単体で変換できる音声ファイルとして順番に送信する。
@@ -250,6 +251,7 @@ export function Recorder(props: {
 
   return (
     <div className="flex flex-col gap-4">
+      {finishing && <FinalizingOverlay count={keptCount} />}
       <div className="sticky top-0 z-10 -mx-4 flex flex-col gap-3 bg-background/95 px-4 py-3 backdrop-blur">
         <div className="flex gap-2">
           {recording ? (

@@ -53,7 +53,7 @@ export default async function Home(props: PageProps<"/">) {
         {rows.map((s) => (
           <li key={s.id}>
             <Link
-              href={`/sessions/${s.id}`}
+              href={s.status === "finalized" ? `/leads/${s.id}` : `/sessions/${s.id}`}
               className="flex items-center gap-3 rounded-xl border border-zinc-200 p-3 dark:border-zinc-800"
             >
               <span className="w-8 text-center text-2xl font-bold">

@@ -2,7 +2,7 @@ import "server-only";
 import { asc, desc, eq } from "drizzle-orm";
 import { getDb, schema } from "./db";
 import type { Session, Utterance } from "./db/schema";
-import { summarize } from "./gemma";
+import { summarize, writeVisitorReport } from "./gemma";
 import { systemOne } from "./jev";
 import { LEAD_QUESTIONS, leadGrade, PROBE_QUESTIONS, SETTING, UTTERANCE_QUESTIONS } from "./jev-questions";
 import { looksLikeProbe } from "./probes";
@@ -167,17 +167,23 @@ export async function finalizeSession(sessionId: string) {
 
   let leadScore = 0;
   let summary = session.summary ?? null;
-  let summaryError: string | null = null;
+  let visitorReport = session.visitorReport ?? null;
+  const errors: string[] = [];
   if (items.length > 0) {
-    const [lead, sum] = await Promise.allSettled([
+    // 担当者向けと来場者向けのまとめは gemma4 に並列で作らせる（llama-server は --parallel 2）
+    const [lead, sum, report] = await Promise.allSettled([
       systemOne(findingsState(items), LEAD_QUESTIONS),
       summarize(session, items),
+      writeVisitorReport(session, items),
     ]);
     if (lead.status === "rejected") throw lead.reason;
     leadScore = lead.value.lead.score;
     if (sum.status === "fulfilled") summary = sum.value;
-    else summaryError = String(sum.reason);
+    else errors.push(`lead summary: ${sum.reason}`);
+    if (report.status === "fulfilled") visitorReport = report.value;
+    else errors.push(`visitor report: ${report.reason}`);
   }
+  if (errors.length) console.error("[finalize]", errors);
 
   await getDb()
     .update(schema.sessions)
@@ -187,9 +193,10 @@ export async function finalizeSession(sessionId: string) {
       leadScore,
       leadGrade: leadGrade(leadScore),
       summary,
+      visitorReport,
       finalizedAt: new Date(),
     })
     .where(eq(schema.sessions.id, sessionId));
 
-  return { summaryError };
+  return { summaryError: errors.length ? "まとめの一部を作成できませんでした" : null };
 }

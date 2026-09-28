@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { index, integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
-import type { Summary } from "../gemma-schema";
+import type { Summary, VisitorReport } from "../gemma-schema";
 
 export const sessions = sqliteTable("sessions", {
   id: text("id").primaryKey(),
@@ -20,7 +20,10 @@ export const sessions = sqliteTable("sessions", {
   nextProbe: text("next_probe"),
   leadScore: real("lead_score"),
   leadGrade: text("lead_grade", { enum: ["A", "B", "C"] }),
+  // ブース担当者向けのリードデータ（来場者には見せない）
   summary: text("summary", { mode: "json" }).$type<Summary>(),
+  // 来場者向けのまとめ（会話終了後の画面に表示）
+  visitorReport: text("visitor_report", { mode: "json" }).$type<VisitorReport>(),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
   finalizedAt: integer("finalized_at", { mode: "timestamp" }),
 });
