@@ -26,6 +26,7 @@ export function NewSessionForm() {
   const [badgeCode, setBadgeCode] = useState("");
   const [company, setCompany] = useState("");
   const [name, setName] = useState("");
+  const [consent, setConsent] = useState(false);
   // ブース担当者名は端末に覚えておき、毎回の入力を省く
   const storedStaff = useSyncExternalStore(noopSubscribe, readStaff, () => "");
   const [staffEdit, setStaffEdit] = useState<string | null>(null);
@@ -104,7 +105,13 @@ export function NewSessionForm() {
       </label>
 
       <label className="flex items-start gap-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-100">
-        <input name="consent" type="checkbox" className="mt-0.5 size-5 shrink-0" />
+        <input
+          name="consent"
+          type="checkbox"
+          checked={consent}
+          onChange={(e) => setConsent(e.target.checked)}
+          className="mt-0.5 size-5 shrink-0"
+        />
         <span>会話の録音・文字起こしについて、来場者の同意を得ました（課題に関係しない発言は保存しません）</span>
       </label>
 
@@ -112,8 +119,9 @@ export function NewSessionForm() {
 
       <button
         type="submit"
-        disabled={pending}
-        className="rounded-xl bg-zinc-900 py-4 text-lg font-semibold text-white disabled:opacity-50 dark:bg-white dark:text-zinc-900"
+        // 録音の同意を確認するまでは押せないようにする
+        disabled={pending || !consent}
+        className="rounded-xl bg-zinc-900 py-4 text-lg font-semibold text-white disabled:cursor-not-allowed disabled:bg-zinc-300 disabled:text-zinc-500 dark:bg-white dark:text-zinc-900 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-500"
       >
         {pending ? "作成中…" : "会話を始める"}
       </button>
