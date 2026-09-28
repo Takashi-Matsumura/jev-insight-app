@@ -1,5 +1,6 @@
 "use client";
 
+import { RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -20,7 +21,8 @@ export function RegenerateButton({ sessionId }: { sessionId: string }) {
 
   return (
     <span className="flex flex-col items-end gap-1">
-      <button onClick={run} disabled={pending} className="text-sm text-zinc-600 underline disabled:opacity-50">
+      <button onClick={run} disabled={pending} className="inline-flex items-center gap-1 text-sm text-zinc-600 disabled:opacity-50">
+        <RefreshCw className={`size-4 ${pending ? "animate-spin" : ""}`} aria-hidden />
         {pending ? "作成中…" : "まとめを作り直す"}
       </button>
       {error && <span className="text-xs text-rose-600">{error}</span>}

@@ -1,4 +1,5 @@
 import { desc } from "drizzle-orm";
+import { Download, Plus } from "lucide-react";
 import Link from "next/link";
 import { connection } from "next/server";
 import { TopicBadge } from "@/components/TopicBadge";
@@ -30,16 +31,18 @@ export default async function Home(props: PageProps<"/">) {
     <main className="mx-auto w-full max-w-2xl p-4">
       <header className="mb-4 flex items-center justify-between gap-2">
         <h1 className="text-xl font-bold">ブース課題メモ</h1>
-        <a href="/api/export" className="text-sm text-zinc-500 underline">
+        <a href="/api/export" className="inline-flex items-center gap-1 text-sm text-zinc-500">
+          <Download className="size-4" aria-hidden />
           CSV出力
         </a>
       </header>
 
       <Link
         href="/sessions/new"
-        className="mb-4 block rounded-xl bg-zinc-900 py-4 text-center text-lg font-semibold text-white dark:bg-white dark:text-zinc-900"
+        className="mb-4 flex items-center justify-center gap-2 rounded-xl bg-zinc-900 py-4 text-lg font-semibold text-white dark:bg-white dark:text-zinc-900"
       >
-        ＋ 新しい来場者
+        <Plus className="size-5" aria-hidden />
+        新しい来場者
       </Link>
 
       <nav className="mb-3 flex flex-wrap gap-2 text-sm">

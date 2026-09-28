@@ -1,5 +1,6 @@
 "use client";
 
+import { Mic, Pause, Square } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { PROBES, type ProbeKey } from "@/lib/probes";
@@ -255,24 +256,30 @@ export function Recorder(props: {
       <div className="sticky top-0 z-10 -mx-4 flex flex-col gap-3 bg-background/95 px-4 py-3 backdrop-blur">
         <div className="flex gap-2">
           {recording ? (
-            <button onClick={pause} className="flex-1 rounded-xl bg-rose-600 py-3 text-lg font-semibold text-white">
-              <span className="mr-2 inline-block size-3 animate-pulse rounded-full bg-white" />
-              録音中（一時停止）
+            <button
+              onClick={pause}
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-rose-600 py-3 text-lg font-semibold text-white"
+            >
+              <span className="inline-block size-3 animate-pulse rounded-full bg-white" aria-hidden />
+              録音中
+              <Pause className="size-5 opacity-80" aria-label="一時停止" />
             </button>
           ) : (
             <button
               onClick={start}
               disabled={finishing}
-              className="flex-1 rounded-xl bg-zinc-900 py-3 text-lg font-semibold text-white disabled:opacity-50 dark:bg-white dark:text-zinc-900"
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-zinc-900 py-3 text-lg font-semibold text-white disabled:opacity-50 dark:bg-white dark:text-zinc-900"
             >
+              <Mic className="size-5" aria-hidden />
               {started ? "録音を再開" : "録音を開始"}
             </button>
           )}
           <button
             onClick={finish}
             disabled={finishing}
-            className="rounded-xl border border-zinc-300 px-4 font-semibold disabled:opacity-50 dark:border-zinc-700"
+            className="flex items-center gap-1.5 rounded-xl border border-zinc-300 px-4 font-semibold disabled:opacity-50 dark:border-zinc-700"
           >
+            <Square className="size-4" aria-hidden />
             {finishing ? "まとめ中…" : "終了"}
           </button>
         </div>

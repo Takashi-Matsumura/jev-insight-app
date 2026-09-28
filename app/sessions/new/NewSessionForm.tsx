@@ -1,5 +1,6 @@
 "use client";
 
+import { CircleCheck, QrCode, RefreshCw } from "lucide-react";
 import { useActionState, useCallback, useState, useSyncExternalStore } from "react";
 import { QrScanner } from "@/components/QrScanner";
 import { parseBadge } from "@/lib/badge";
@@ -40,26 +41,39 @@ export function NewSessionForm() {
     <form action={action} className="flex flex-col gap-4">
       <input type="hidden" name="badgeCode" value={badgeCode} />
 
-      {badgeCode ? (
-        <div className="flex items-center gap-3 rounded-xl bg-emerald-50 p-3 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-100">
-          <span className="text-xl">✓</span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-sm font-semibold">QRコードを読み取りました</span>
-            <span className="block break-all font-mono text-xs opacity-70">{badgeCode}</span>
-          </span>
-          <button type="button" onClick={() => setScanning(true)} className="text-sm underline">
-            読み直す
-          </button>
-        </div>
-      ) : (
+      <div className="flex flex-col items-center gap-2">
         <button
           type="button"
           onClick={() => setScanning(true)}
-          className="rounded-xl border-2 border-dashed border-zinc-400 py-5 text-lg font-semibold dark:border-zinc-600"
+          aria-label={badgeCode ? "QRコードを読み直す" : "来場者バッジのQRを読み取る"}
+          className={`flex aspect-square w-56 flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed p-4 text-center transition-colors ${
+            badgeCode
+              ? "border-emerald-500 bg-emerald-50 text-emerald-900 dark:border-emerald-600 dark:bg-emerald-950 dark:text-emerald-100"
+              : "border-zinc-400 text-zinc-700 active:bg-zinc-100 dark:border-zinc-600 dark:text-zinc-300 dark:active:bg-zinc-900"
+          }`}
         >
-          📷 来場者バッジのQRを読み取る
+          {badgeCode ? (
+            <>
+              <CircleCheck className="size-16" strokeWidth={1.5} aria-hidden />
+              <span className="font-semibold">読み取りました</span>
+              <span className="flex items-center gap-1 text-sm opacity-80">
+                <RefreshCw className="size-4" aria-hidden />
+                読み直す
+              </span>
+            </>
+          ) : (
+            <>
+              <QrCode className="size-20" strokeWidth={1.25} aria-hidden />
+              <span className="font-semibold leading-snug">
+                来場者バッジの
+                <br />
+                QRを読み取る
+              </span>
+            </>
+          )}
         </button>
-      )}
+        {badgeCode && <p className="w-full break-all text-center font-mono text-xs text-zinc-500">{badgeCode}</p>}
+      </div>
 
       <label className="flex flex-col gap-1 text-sm font-medium">
         <span>
