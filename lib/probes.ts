@@ -1,3 +1,5 @@
+import { OPENING_QUESTIONS } from "./starters";
+
 // 会話中に「まだ聞けていない情報」を埋めるための深掘り質問。
 // どれを出すかは Jev が選び、文面はここで固定する（Jev は文章を生成しないため）。
 
@@ -56,11 +58,11 @@ function similarity(a: string, b: string) {
   return (2 * common) / total;
 }
 
-// 画面に出した深掘り質問を、ブース担当者が読み上げた発言かどうか
+// 画面に出した質問（深掘り・話しはじめ）を、ブース担当者が読み上げた発言かどうか
 export function looksLikeProbe(text: string) {
   const t = normalize(text);
-  return Object.values(PROBES).some((p) => {
-    const q = normalize(p.question);
+  return [...Object.values(PROBES).map((p) => p.question), ...OPENING_QUESTIONS].some((question) => {
+    const q = normalize(question);
     return q.includes(t) || similarity(t, q) >= 0.6;
   });
 }
