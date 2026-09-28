@@ -1,9 +1,11 @@
 "use client";
 
+import { Mic, Pause, Square } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { PROBES, type ProbeKey } from "@/lib/probes";
 import type { ChunkEvent } from "@/app/api/sessions/[id]/chunks/route";
+import { ConversationStarter } from "./ConversationStarter";
 import { FinalizingOverlay } from "./FinalizingOverlay";
 import { DiscardedLine, InsightCard, PendingLine, type InsightItem } from "./InsightCard";
 
@@ -65,24 +67,28 @@ function pickMimeType() {
   return "";
 }
 
-function recordSegments(
-  stream: MediaStream,
-  handlers: {
-    onChunk: (blob: Blob) => void;
-    shouldContinue: () => boolean;
-    onStart: (rec: MediaRecorder, timer: ReturnType<typeof setTimeout>) => void;
-  },
-) {
+const MIC_CONSTRAINTS: MediaStreamConstraints = {
+  audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+};
+
+// 1区切り分の録音を始める。止まったら onChunk に音声を渡し、onEnd を呼ぶ。
+// マイク入力が終わっている（機器の切り替え・スリープ等）と start() が例外を投げる
+function recordSegment(stream: MediaStream, handlers: { onChunk: (blob: Blob) => void; onEnd: () => void }) {
   const mimeType = pickMimeType();
   const rec = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
   const parts: Blob[] = [];
+  let markStopped = () => {};
+  // onstop（音声の受け渡し）まで終わったら解決する
+  const stopped = new Promise<void>((resolve) => (markStopped = resolve));
   rec.ondataavailable = (e) => parts.push(e.data);
   rec.onstop = () => {
     handlers.onChunk(new Blob(parts, { type: rec.mimeType }));
-    if (handlers.shouldContinue()) recordSegments(stream, handlers);
+    markStopped();
+    handlers.onEnd();
   };
   rec.start();
-  handlers.onStart(rec, setTimeout(() => rec.state === "recording" && rec.stop(), CHUNK_MS));
+  const timer = setTimeout(() => rec.state === "recording" && rec.stop(), CHUNK_MS);
+  return { rec, timer, stopped };
 }
 
 export function Recorder(props: {
@@ -111,6 +117,9 @@ export function Recorder(props: {
   const queueRef = useRef<Promise<void>>(Promise.resolve());
   const seqRef = useRef(0);
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
+  const runRef = useRef(0);
+  const stoppedRef = useRef<Promise<void>>(Promise.resolve());
+  const startNextRef = useRef<(run: number) => Promise<void>>(async () => {});
 
   const upload = useCallback(
     async (blob: Blob, seq: number) => {
@@ -168,32 +177,71 @@ export function Recorder(props: {
     [upload],
   );
 
-  const startSegment = useCallback(() => {
-    const stream = streamRef.current;
-    if (!stream) return;
-    recordSegments(stream, {
-      onChunk: enqueue,
-      shouldContinue: () => activeRef.current,
-      onStart: (rec, timer) => {
-        recorderRef.current = rec;
-        timerRef.current = timer;
-      },
-    });
-  }, [enqueue]);
-
   const stopStream = useCallback(() => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
+  }, []);
+
+  const releaseWakeLock = useCallback(() => {
     wakeLockRef.current?.release().catch(() => {});
     wakeLockRef.current = null;
   }, []);
 
+  const giveUp = useCallback(
+    (message: string) => {
+      activeRef.current = false;
+      stopStream();
+      releaseWakeLock();
+      setRecording(false);
+      setError(message);
+    },
+    [stopStream, releaseWakeLock],
+  );
+
+  // 次の区切りの録音を始める。マイク入力が切れていたら取り直す。
+  // run は「録音開始」ごとの番号で、一時停止をまたいで古い録音の続きが走らないようにする
+  const startSegment = useCallback(
+    async (run: number) => {
+      for (let attempt = 0; attempt < 2; attempt++) {
+        if (!activeRef.current || runRef.current !== run) return;
+        try {
+          let stream = streamRef.current;
+          if (!stream || !stream.active) {
+            stream = await navigator.mediaDevices.getUserMedia(MIC_CONSTRAINTS);
+            if (!activeRef.current || runRef.current !== run) {
+              stream.getTracks().forEach((t) => t.stop());
+              return;
+            }
+            streamRef.current = stream;
+          }
+          const { rec, timer, stopped } = recordSegment(stream, {
+            onChunk: enqueue,
+            onEnd: () => {
+              if (recorderRef.current === rec) void startNextRef.current(run);
+            },
+          });
+          recorderRef.current = rec;
+          timerRef.current = timer;
+          stoppedRef.current = stopped;
+          return;
+        } catch (e) {
+          console.warn("[recorder] 録音を開始できません", e);
+          stopStream(); // 次の試行でマイクを取り直す
+        }
+      }
+      giveUp("録音が止まりました。マイクの接続を確認して、もう一度「録音を再開」を押してください。");
+    },
+    [enqueue, stopStream, giveUp],
+  );
+
+  useEffect(() => {
+    startNextRef.current = startSegment;
+  }, [startSegment]);
+
   const start = async () => {
     setError(null);
     try {
-      streamRef.current = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-      });
+      streamRef.current = await navigator.mediaDevices.getUserMedia(MIC_CONSTRAINTS);
     } catch {
       setError("マイクを使用できません。ブラウザの設定でマイクを許可してください。");
       return;
@@ -201,26 +249,26 @@ export function Recorder(props: {
     // 録音中に画面が消えると録音が止まる端末があるため、スリープを防ぐ
     wakeLockRef.current = await navigator.wakeLock?.request("screen").catch(() => null);
     activeRef.current = true;
+    const run = ++runRef.current;
     setRecording(true);
     setStarted(true);
-    startSegment();
+    void startSegment(run);
   };
 
   // 録音を止めて、最後の音声を送り切るまで待つ
   const pause = useCallback(async () => {
     activeRef.current = false;
+    runRef.current++;
     if (timerRef.current) clearTimeout(timerRef.current);
     const rec = recorderRef.current;
-    if (rec && rec.state === "recording") {
-      await new Promise<void>((resolve) => {
-        rec.addEventListener("stop", () => resolve(), { once: true });
-        rec.stop();
-      });
-    }
+    if (rec && rec.state === "recording") rec.stop();
+    // 区切りのタイマーで止まった直後でも、最後の音声を送信キューに入れ終わるまで待つ
+    await stoppedRef.current;
     stopStream();
+    releaseWakeLock();
     setRecording(false);
     await queueRef.current;
-  }, [stopStream]);
+  }, [stopStream, releaseWakeLock]);
 
   const finish = async () => {
     setFinishing(true);
@@ -240,10 +288,12 @@ export function Recorder(props: {
     () => () => {
       activeRef.current = false;
       if (timerRef.current) clearTimeout(timerRef.current);
-      recorderRef.current?.stop();
+      runRef.current++;
+      if (recorderRef.current?.state === "recording") recorderRef.current.stop();
       stopStream();
+      releaseWakeLock();
     },
-    [stopStream],
+    [stopStream, releaseWakeLock],
   );
 
   const keptCount = feed.filter((e) => e.kind === "kept").length;
@@ -255,24 +305,30 @@ export function Recorder(props: {
       <div className="sticky top-0 z-10 -mx-4 flex flex-col gap-3 bg-background/95 px-4 py-3 backdrop-blur">
         <div className="flex gap-2">
           {recording ? (
-            <button onClick={pause} className="flex-1 rounded-xl bg-rose-600 py-3 text-lg font-semibold text-white">
-              <span className="mr-2 inline-block size-3 animate-pulse rounded-full bg-white" />
-              録音中（一時停止）
+            <button
+              onClick={pause}
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-rose-600 py-3 text-lg font-semibold text-white"
+            >
+              <span className="inline-block size-3 animate-pulse rounded-full bg-white" aria-hidden />
+              録音中
+              <Pause className="size-5 opacity-80" aria-label="一時停止" />
             </button>
           ) : (
             <button
               onClick={start}
               disabled={finishing}
-              className="flex-1 rounded-xl bg-zinc-900 py-3 text-lg font-semibold text-white disabled:opacity-50 dark:bg-white dark:text-zinc-900"
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-zinc-900 py-3 text-lg font-semibold text-white disabled:opacity-50 dark:bg-white dark:text-zinc-900"
             >
+              <Mic className="size-5" aria-hidden />
               {started ? "録音を再開" : "録音を開始"}
             </button>
           )}
           <button
             onClick={finish}
             disabled={finishing}
-            className="rounded-xl border border-zinc-300 px-4 font-semibold disabled:opacity-50 dark:border-zinc-700"
+            className="flex items-center gap-1.5 rounded-xl border border-zinc-300 px-4 font-semibold disabled:opacity-50 dark:border-zinc-700"
           >
+            <Square className="size-4" aria-hidden />
             {finishing ? "まとめ中…" : "終了"}
           </button>
         </div>
@@ -293,6 +349,9 @@ export function Recorder(props: {
         {error && <p className="text-sm text-rose-600">{error}</p>}
       </div>
 
+      {/* 最初の課題が見つかるまでは、話しはじめのきっかけを出す。見つかった後は Jev の「次に聞いてみる」に任せる */}
+      {keptCount === 0 && <ConversationStarter />}
+
       <ul className="flex flex-col-reverse gap-2">
         {feed.map((e) =>
           e.kind === "kept" ? (
@@ -305,9 +364,6 @@ export function Recorder(props: {
         )}
         {pendingText && <PendingLine text={pendingText} label="聞き取り中…" />}
       </ul>
-      {feed.length === 0 && !pendingText && (
-        <p className="py-6 text-center text-sm text-zinc-500">課題に関係する発言があると、ここに表示されます</p>
-      )}
     </div>
   );
 }

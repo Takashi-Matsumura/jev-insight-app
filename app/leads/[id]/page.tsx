@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { InsightCard } from "@/components/InsightCard";
+import { NavLink } from "@/components/NavLink";
 import { SummaryView } from "@/components/LeadSummary";
 import { RegenerateButton } from "@/components/RegenerateButton";
 import { getSession, listUtterances } from "@/lib/pipeline";
@@ -17,9 +17,11 @@ export default async function LeadPage(props: PageProps<"/leads/[id]">) {
 
   return (
     <main className="mx-auto w-full max-w-2xl p-4">
-      <nav className="flex justify-between text-sm text-zinc-500">
-        <Link href="/">← 一覧へ</Link>
-        <Link href={`/sessions/${id}`}>{session.status === "recording" ? "会話に戻る" : "来場者向けまとめ"} →</Link>
+      <nav className="flex justify-between">
+        <NavLink href="/">一覧へ</NavLink>
+        <NavLink href={`/sessions/${id}`} forward>
+          {session.status === "recording" ? "会話に戻る" : "来場者向けまとめ"}
+        </NavLink>
       </nav>
       <header className="mb-4 mt-2">
         <p className="text-xs font-semibold text-zinc-500">リード（担当者用）</p>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
+import { NavLink } from "@/components/NavLink";
 import { Recorder } from "@/components/Recorder";
 import { RegenerateButton } from "@/components/RegenerateButton";
 import { VisitorReportView } from "@/components/VisitorReportView";
@@ -18,9 +19,7 @@ export default async function SessionPage(props: PageProps<"/sessions/[id]">) {
   if (session.status === "recording") {
     return (
       <main className="mx-auto w-full max-w-2xl p-4">
-        <Link href="/" className="text-sm text-zinc-500">
-          ← 一覧へ
-        </Link>
+        <NavLink href="/">一覧へ</NavLink>
         <header className="mb-2 mt-2">
           <h1 className="text-xl font-bold">{displayCompany(session.company)}</h1>
           <p className="text-sm text-zinc-500">{session.visitorName}</p>

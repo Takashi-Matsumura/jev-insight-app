@@ -1,6 +1,7 @@
 "use client";
 
 import jsQR from "jsqr";
+import { X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 // 背面カメラの映像からQRコードを読み取る。iOS Safari は BarcodeDetector 非対応のため jsQR を使う。
@@ -62,7 +63,12 @@ export function QrScanner({ onDetect, onClose }: { onDetect: (value: string) => 
       </div>
       <div className="flex flex-col gap-2 p-4">
         <p className="text-center text-sm text-white">{error ?? "来場者バッジのQRコードを枠に合わせてください"}</p>
-        <button onClick={onClose} className="rounded-xl bg-white py-3 font-semibold text-zinc-900">
+        <button
+          type="button"
+          onClick={onClose}
+          className="flex items-center justify-center gap-2 rounded-xl bg-white py-3 font-semibold text-zinc-900"
+        >
+          <X className="size-5" aria-hidden />
           閉じる
         </button>
       </div>

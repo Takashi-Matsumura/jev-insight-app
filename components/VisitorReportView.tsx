@@ -1,3 +1,4 @@
+import { Lightbulb } from "lucide-react";
 import type { VisitorReport } from "@/lib/gemma-schema";
 import { TOPICS } from "@/lib/topics";
 import { TopicShare } from "./TopicShare";
@@ -27,9 +28,10 @@ export function VisitorReportView({ report, items }: { report: VisitorReport; it
                 className={`rounded-2xl border p-4 ${underlying ? "border-amber-400 bg-amber-50 dark:border-amber-600 dark:bg-amber-950/40" : "border-zinc-200 dark:border-zinc-800"}`}
               >
                 <p
-                  className={`mb-1 text-xs font-semibold ${underlying ? "text-amber-700 dark:text-amber-300" : "text-zinc-500"}`}
+                  className={`mb-1 flex items-center gap-1 text-xs font-semibold ${underlying ? "text-amber-700 dark:text-amber-300" : "text-zinc-500"}`}
                 >
-                  {underlying ? "💡 背景にある、見えにくい課題" : "お話しいただいた課題"}
+                  {underlying && <Lightbulb className="size-4" aria-hidden />}
+                  {underlying ? "背景にある、見えにくい課題" : "お話しいただいた課題"}
                 </p>
                 <p className="text-lg font-bold leading-snug">{issue.title}</p>
                 <p className="mt-2 leading-relaxed">{issue.insight}</p>
