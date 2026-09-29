@@ -2,6 +2,7 @@ import { desc } from "drizzle-orm";
 import { Download, Plus } from "lucide-react";
 import Link from "next/link";
 import { connection } from "next/server";
+import { LogoutTitle } from "@/components/LogoutTitle";
 import { TopicBadge } from "@/components/TopicBadge";
 import { getDb, schema } from "@/lib/db";
 import { displayCompany, TOPIC_KEYS, TOPICS, type Topic } from "@/lib/topics";
@@ -30,7 +31,7 @@ export default async function Home(props: PageProps<"/">) {
   return (
     <main className="mx-auto w-full max-w-2xl p-4">
       <header className="mb-4 flex items-center justify-between gap-2">
-        <h1 className="text-xl font-bold">ブース課題メモ</h1>
+        <LogoutTitle>ブース課題メモ</LogoutTitle>
         <a href="/api/export" className="inline-flex items-center gap-1 text-sm text-zinc-500">
           <Download className="size-4" aria-hidden />
           CSV出力
