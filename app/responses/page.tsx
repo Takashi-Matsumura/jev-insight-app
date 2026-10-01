@@ -5,6 +5,7 @@ import { LogoutTitle } from "@/components/LogoutTitle";
 import { NavLink } from "@/components/NavLink";
 import { StaffTabs } from "@/components/StaffTabs";
 import { SurveyAnswers } from "@/components/SurveyAnswers";
+import { SurveyQrButton } from "@/components/SurveyQrButton";
 import { getDb, schema } from "@/lib/db";
 import { ticketNumber } from "@/lib/survey";
 import { displayCompany } from "@/lib/topics";
@@ -36,6 +37,8 @@ export default async function ResponsesPage() {
       </header>
 
       <StaffTabs current="survey" />
+
+      <SurveyQrButton />
 
       <p className="mb-3 text-sm text-zinc-500">
         回答 {responses.length} 件 / コーヒーお渡し済み {redeemedCount} 件
