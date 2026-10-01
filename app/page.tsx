@@ -4,6 +4,7 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { LogoutTitle } from "@/components/LogoutTitle";
 import { StaffTabs } from "@/components/StaffTabs";
+import { SurveyQrButton } from "@/components/SurveyQrButton";
 import { TopicBadge } from "@/components/TopicBadge";
 import { getDb, schema } from "@/lib/db";
 import { displayCompany, TOPIC_KEYS, TOPICS, type Topic } from "@/lib/topics";
@@ -43,11 +44,13 @@ export default async function Home(props: PageProps<"/">) {
 
       <Link
         href="/sessions/new"
-        className="mb-4 flex items-center justify-center gap-2 rounded-xl bg-zinc-900 py-4 text-lg font-semibold text-white dark:bg-white dark:text-zinc-900"
+        className="mb-2 flex items-center justify-center gap-2 rounded-xl bg-zinc-900 py-4 text-lg font-semibold text-white dark:bg-white dark:text-zinc-900"
       >
         <Plus className="size-5" aria-hidden />
         新しい来場者
       </Link>
+
+      <SurveyQrButton secondary />
 
       <nav className="mb-3 flex flex-wrap gap-2 text-sm">
         <FilterLink href="/" active={!filter} label="すべて" />
