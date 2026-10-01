@@ -3,6 +3,7 @@ import { Download, Plus } from "lucide-react";
 import Link from "next/link";
 import { connection } from "next/server";
 import { LogoutTitle } from "@/components/LogoutTitle";
+import { StaffTabs } from "@/components/StaffTabs";
 import { TopicBadge } from "@/components/TopicBadge";
 import { getDb, schema } from "@/lib/db";
 import { displayCompany, TOPIC_KEYS, TOPICS, type Topic } from "@/lib/topics";
@@ -37,6 +38,8 @@ export default async function Home(props: PageProps<"/">) {
           CSV出力
         </a>
       </header>
+
+      <StaffTabs current="memo" />
 
       <Link
         href="/sessions/new"

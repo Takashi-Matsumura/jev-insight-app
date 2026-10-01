@@ -1,9 +1,12 @@
+import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { InsightCard } from "@/components/InsightCard";
 import { NavLink } from "@/components/NavLink";
 import { SummaryView } from "@/components/LeadSummary";
 import { RegenerateButton } from "@/components/RegenerateButton";
+import { SurveyAnswers } from "@/components/SurveyAnswers";
+import { getDb, schema } from "@/lib/db";
 import { getSession, listUtterances } from "@/lib/pipeline";
 import { displayCompany } from "@/lib/topics";
 
@@ -14,6 +17,10 @@ export default async function LeadPage(props: PageProps<"/leads/[id]">) {
   const session = await getSession(id);
   if (!session) notFound();
   const items = await listUtterances(id);
+  // 同じ来場者バッジでアンケートに答えていれば、その回答も見せる
+  const [survey] = session.badgeCode
+    ? await getDb().select().from(schema.surveyResponses).where(eq(schema.surveyResponses.badgeCode, session.badgeCode))
+    : [];
 
   return (
     <main className="mx-auto w-full max-w-2xl p-4">
@@ -67,6 +74,18 @@ export default async function LeadPage(props: PageProps<"/leads/[id]">) {
                 <InsightCard key={item.id} item={item} />
               ))}
             </ul>
+          </section>
+        )}
+
+        {survey && (
+          <section>
+            <div className="mb-2 flex items-center justify-between">
+              <h2 className="font-semibold">アンケートの回答</h2>
+              <NavLink href={`/responses#r-${survey.id}`} forward>
+                回答一覧で見る
+              </NavLink>
+            </div>
+            <SurveyAnswers answers={survey.answers} />
           </section>
         )}
       </div>

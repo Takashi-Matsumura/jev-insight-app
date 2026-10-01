@@ -1,4 +1,5 @@
 import { desc } from "drizzle-orm";
+import { csvResponse } from "@/lib/csv";
 import { getDb, schema } from "@/lib/db";
 import { TOPICS, topicLabel } from "@/lib/topics";
 
@@ -21,17 +22,5 @@ export async function GET() {
     s.memo,
   ]);
 
-  const csv = [header, ...lines].map((r) => r.map(csvCell).join(",")).join("\r\n");
-  return new Response("﻿" + csv, {
-    headers: {
-      "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="booth-leads.csv"`,
-    },
-  });
-}
-
-// Excel での数式実行（CSV インジェクション）を防ぐため、先頭が = + - @ の値はエスケープする
-function csvCell(v: string) {
-  const safe = /^[=+\-@\t\r]/.test(v) ? `'${v}` : v;
-  return `"${safe.replace(/"/g, '""')}"`;
+  return csvResponse([header, ...lines], "booth-leads.csv");
 }
