@@ -4,6 +4,22 @@ import jsQR from "jsqr";
 import { X } from "lucide-react";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 
+// 解析する映像の幅の上限。小さく写った QR や情報量の多い QR を読むため、縮小しすぎない
+const MAX_SCAN_WIDTH = 1280;
+
+// QR の中身を文字列にする。日本の名刺やバッジには Shift_JIS のものがあり、
+// jsQR は UTF-8 として読めないと data を空にするので、そのときはバイト列から読み直す
+function qrText(code: { data: string; binaryData: number[] }) {
+  if (code.data || code.binaryData.length === 0) return code.data;
+  const bytes = new Uint8Array(code.binaryData);
+  for (const encoding of ["utf-8", "shift_jis"]) {
+    try {
+      return new TextDecoder(encoding, { fatal: true }).decode(bytes);
+    } catch {}
+  }
+  return "";
+}
+
 // 背面カメラの映像からQRコードを読み取る。iOS Safari は BarcodeDetector 非対応のため jsQR を使う。
 export function QrScanner({
   onDetect,
@@ -30,17 +46,18 @@ export function QrScanner({
       if (stopped) return;
       const video = videoRef.current;
       if (video && ctx && video.readyState >= video.HAVE_ENOUGH_DATA) {
-        // 処理を軽くするため縮小して読む
-        const scale = Math.min(1, 640 / video.videoWidth);
+        const scale = Math.min(1, MAX_SCAN_WIDTH / video.videoWidth);
         canvas.width = video.videoWidth * scale;
         canvas.height = video.videoHeight * scale;
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const code = jsQR(img.data, img.width, img.height, { inversionAttempts: "dontInvert" });
-        if (code?.data) {
+        // 黒地に白の QR も読む
+        const code = jsQR(img.data, img.width, img.height, { inversionAttempts: "attemptBoth" });
+        const text = code ? qrText(code) : "";
+        if (text) {
           stopped = true;
           navigator.vibrate?.(50);
-          detect(code.data);
+          detect(text);
           return;
         }
       }
@@ -49,7 +66,11 @@ export function QrScanner({
 
     // HTTPS でないページでは mediaDevices 自体が無い
     const request = navigator.mediaDevices
-      ? navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false })
+      ? navigator.mediaDevices.getUserMedia({
+          // 解像度を指定しないと 640x480 になる端末があり、細かい QR が読めない
+          video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } },
+          audio: false,
+        })
       : Promise.reject(new Error("mediaDevices unavailable"));
 
     request
