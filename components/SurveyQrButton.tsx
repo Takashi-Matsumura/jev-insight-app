@@ -22,7 +22,8 @@ function qrModules(text: string) {
 }
 
 // アンケートの入口（/survey）の QR を全画面で出す。担当者の端末を来場者に向けて読み取ってもらう
-export function SurveyQrButton() {
+// secondary: 画面にほかの主ボタンがあるときに、控えめな見た目で出す
+export function SurveyQrButton({ secondary = false }: { secondary?: boolean }) {
   const [url, setUrl] = useState<string | null>(null);
 
   return (
@@ -31,7 +32,11 @@ export function SurveyQrButton() {
         type="button"
         // いま開いているホスト（本番では公開用の URL）でアンケートの URL を作る
         onClick={() => setUrl(new URL("/survey", window.location.origin).href)}
-        className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl bg-zinc-900 py-4 text-lg font-semibold text-white dark:bg-white dark:text-zinc-900"
+        className={`mb-4 flex w-full items-center justify-center gap-2 rounded-xl font-semibold ${
+          secondary
+            ? "border border-zinc-300 py-3 dark:border-zinc-700"
+            : "bg-zinc-900 py-4 text-lg text-white dark:bg-white dark:text-zinc-900"
+        }`}
       >
         <QrCode className="size-5" aria-hidden />
         アンケートのQRを表示
