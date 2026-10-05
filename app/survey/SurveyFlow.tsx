@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useActionState, useState, useSyncExternalStore, useTransition } from "react";
 import { QrIcon } from "@/components/QrIcon";
 import { QrScanner } from "@/components/QrScanner";
-import { checkBadgeCode, parseBadge } from "@/lib/badge";
+import { checkBadgeCode } from "@/lib/badge";
 import { CONSENT_TEXT, QUESTIONS, TICKET_STORAGE_KEY, type Question } from "@/lib/survey";
 import { findTicket, submitSurvey, type SurveyState } from "./actions";
 
@@ -17,8 +17,6 @@ function readTicket() {
     return null;
   }
 }
-// 一時的なデバッグ用: /survey?debug=1 で開いたときだけ、読み取った QR の中身を表示する
-const readDebug = () => new URLSearchParams(window.location.search).has("debug");
 
 // 来場者バッジの QR を読んでから、設問に進む（QR が読めないと回答できない）
 export function SurveyFlow() {
@@ -31,16 +29,9 @@ export function SurveyFlow() {
   const [consent, setConsent] = useState(false);
   // この端末で回答済みなら、チケットに戻れるようにする
   const savedTicket = useSyncExternalStore(noopSubscribe, readTicket, () => null);
-  const debug = useSyncExternalStore(noopSubscribe, readDebug, () => false);
-  const [debugRaw, setDebugRaw] = useState<string | null>(null);
 
   const handleDetect = (value: string) => {
     setScanning(false);
-    if (debug) {
-      // デバッグ中は中身を表示するだけで、回答済みの確認や画面の移動はしない
-      setDebugRaw(value);
-      return;
-    }
     const badge = checkBadgeCode(value, window.location.host);
     if (!badge.ok) {
       setBadgeCode("");
@@ -124,8 +115,6 @@ export function SurveyFlow() {
         )}
       </section>
 
-      {debug && debugRaw !== null && <BadgeDebug raw={debugRaw} />}
-
       {badgeCode && (
         <form
           // form の action に渡すと、エラーで戻ったときに入力が消える。自分で送って回答を残す
@@ -177,26 +166,6 @@ export function SurveyFlow() {
         />
       )}
     </div>
-  );
-}
-
-function BadgeDebug({ raw }: { raw: string }) {
-  const parsed = parseBadge(raw);
-  return (
-    <section className="flex flex-col gap-2 rounded-xl border-2 border-amber-500 bg-amber-50 p-3 text-sm text-amber-950 dark:bg-amber-950 dark:text-amber-50">
-      <h2 className="font-bold">デバッグ: 読み取った QR の中身</h2>
-      <p>文字数: {raw.length} / 行数: {raw.split(/\r?\n/).length}</p>
-      <p className="font-semibold">そのまま</p>
-      <pre className="whitespace-pre-wrap break-all rounded bg-white p-2 font-mono text-xs dark:bg-black">{raw}</pre>
-      <p className="font-semibold">改行・制御文字を見える形で（JSON）</p>
-      <pre className="whitespace-pre-wrap break-all rounded bg-white p-2 font-mono text-xs dark:bg-black">
-        {JSON.stringify(raw)}
-      </pre>
-      <p className="font-semibold">形式の判定</p>
-      <pre className="whitespace-pre-wrap break-all rounded bg-white p-2 font-mono text-xs dark:bg-black">
-        {`URL: ${URL.canParse(raw.trim()) ? "はい" : "いいえ"}\nvCard/MECARD から取れた会社名: ${parsed.company || "（なし）"}\nvCard/MECARD から取れた氏名: ${parsed.name || "（なし）"}`}
-      </pre>
-    </section>
   );
 }
 
