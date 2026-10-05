@@ -6,7 +6,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { checkBadgeCode, parseBadge } from "@/lib/badge";
 import { getDb, schema } from "@/lib/db";
-import { parseAnswers } from "@/lib/survey";
+import { allowReanswer, parseAnswers } from "@/lib/survey";
 
 // /survey 配下は来場者に公開する（前段の認証を通さない）。
 // ここには来場者が実行してよい操作だけを置き、DB の行そのものは返さない。
@@ -33,6 +33,7 @@ async function ticketPath(badgeCode: string) {
 export async function findTicket(badgeCode: string): Promise<SurveyState> {
   const badge = await checkBadge(badgeCode);
   if (!badge.ok) return { error: badge.error };
+  if (allowReanswer()) return {};
   const path = await ticketPath(badge.code);
   if (path) redirect(path);
   return {};
@@ -46,6 +47,8 @@ export async function submitSurvey(_prev: SurveyState, formData: FormData): Prom
   if (formData.get("consent") !== "on") return { error: "ご利用への同意を確認してください" };
 
   const { company, name } = parseBadge(badge.code);
+  // テストモードでは前の回答を消してから入れ直す（badge_code は一意なので、残したままでは入らない）
+  if (allowReanswer()) await getDb().delete(surveyResponses).where(eq(surveyResponses.badgeCode, badge.code));
   // 1 バッジ 1 枚。同じバッジで送り直された場合は、最初の回答とチケットをそのまま使う
   const [created] = await getDb()
     .insert(surveyResponses)
