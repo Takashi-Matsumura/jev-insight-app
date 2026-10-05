@@ -72,6 +72,12 @@ export const CONSENT_TEXT = "ご回答の内容と来場者バッジの情報を
 // 回答済みの端末がチケットに戻れるよう、チケットの token を localStorage に覚えておくキー
 export const TICKET_STORAGE_KEY = "survey.ticket";
 
+// 社内テスト用: 1 にすると、同じ来場者バッジで何度でも答え直せる（前の回答とチケットは消える）。
+// 当日は設定しない（既定は 1 バッジ 1 枚）
+export function allowReanswer() {
+  return process.env.SURVEY_ALLOW_REANSWER === "1";
+}
+
 export function ticketNumber(id: number) {
   return String(id).padStart(3, "0");
 }

@@ -7,7 +7,7 @@ import { StaffTabs } from "@/components/StaffTabs";
 import { SurveyAnswers } from "@/components/SurveyAnswers";
 import { SurveyQrButton } from "@/components/SurveyQrButton";
 import { getDb, schema } from "@/lib/db";
-import { ticketNumber } from "@/lib/survey";
+import { allowReanswer, ticketNumber } from "@/lib/survey";
 import { displayCompany } from "@/lib/topics";
 
 // 来場者アンケートの回答一覧（担当者用）
@@ -39,6 +39,13 @@ export default async function ResponsesPage() {
       <StaffTabs current="survey" />
 
       <SurveyQrButton />
+
+      {allowReanswer() && (
+        <p role="status" className="mb-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-100">
+          テストモード中です。同じ来場者バッジで何度でも答え直せます（前の回答とチケットは消えます）。当日までに
+          <code className="mx-1">SURVEY_ALLOW_REANSWER</code>を外してください。
+        </p>
+      )}
 
       <p className="mb-3 text-sm text-zinc-500">
         回答 {responses.length} 件 / コーヒーお渡し済み {redeemedCount} 件
