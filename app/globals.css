@@ -10,6 +10,15 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-slab: var(--font-alfa-slab);
+
+  /* 来場者アンケート（OCCカフェ）の色。オレンジ・ゴールド・コーヒーはロゴから取った */
+  --color-espresso: #1f140d;
+  --color-roast: #6a3907;
+  --color-crema: #f3e7d5;
+  --color-paper: #fffaf1;
+  --color-occ: #eb6101;
+  --color-gold: #d18e09;
 }
 
 @media (prefers-color-scheme: dark) {

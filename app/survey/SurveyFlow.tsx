@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight, CircleCheck, RefreshCw, Ticket } from "lucide-react";
+import { ChevronRight, CircleCheck, Coffee, RefreshCw, Ticket } from "lucide-react";
 import Link from "next/link";
 import { useActionState, useState, useSyncExternalStore, useTransition } from "react";
 import { QrIcon } from "@/components/QrIcon";
@@ -52,9 +52,9 @@ export function SurveyFlow() {
       {savedTicket && !badgeCode && (
         <Link
           href={`/survey/ticket/${savedTicket}`}
-          className="flex items-center gap-3 rounded-2xl bg-emerald-50 p-4 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-100"
+          className="flex items-center gap-3 rounded-2xl bg-espresso p-4 text-crema shadow-lg shadow-roast/20"
         >
-          <Ticket className="size-6 shrink-0" aria-hidden />
+          <Ticket className="size-6 shrink-0 text-gold" aria-hidden />
           <span className="flex-1">
             <span className="block font-semibold">回答済みです</span>
             <span className="block text-sm opacity-80">コーヒー引換チケットを表示する</span>
@@ -63,21 +63,21 @@ export function SurveyFlow() {
         </Link>
       )}
 
-      <section className="flex flex-col items-center gap-2">
+      <section className="flex flex-col items-center gap-3">
         <button
           type="button"
           onClick={() => setScanning(true)}
           disabled={checking}
           aria-label={badgeCode ? "QRコードを読み直す" : "来場者バッジのQRを読み取る"}
-          className={`flex aspect-square w-56 flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed p-4 text-center transition-colors disabled:opacity-50 ${
-            badgeCode
-              ? "border-emerald-500 bg-emerald-50 text-emerald-900 dark:border-emerald-600 dark:bg-emerald-950 dark:text-emerald-100"
-              : "border-zinc-400 text-zinc-700 active:bg-zinc-100 dark:border-zinc-600 dark:text-zinc-300 dark:active:bg-zinc-900"
+          // コーヒーのコースターのような丸いボタン。内側の点線はゴールド
+          className={`relative flex aspect-square w-60 flex-col items-center justify-center gap-3 rounded-full p-6 text-center shadow-xl transition-transform active:scale-95 disabled:opacity-60 ${
+            badgeCode ? "bg-paper text-roast shadow-roast/15 ring-4 ring-occ" : "bg-espresso text-crema shadow-roast/30"
           }`}
         >
+          <span aria-hidden className="absolute inset-3 rounded-full border-2 border-dashed border-gold/70" />
           {badgeCode ? (
             <>
-              <CircleCheck className="size-16" strokeWidth={1.5} aria-hidden />
+              <CircleCheck className="size-16 text-occ" strokeWidth={1.5} aria-hidden />
               <span className="font-semibold">読み取りました</span>
               <span className="flex items-center gap-1 text-sm opacity-80">
                 <RefreshCw className="size-4" aria-hidden />
@@ -86,7 +86,7 @@ export function SurveyFlow() {
             </>
           ) : (
             <>
-              <QrIcon className="size-20" aria-hidden />
+              <QrIcon className="size-20 text-gold" aria-hidden />
               <span className="font-semibold leading-snug">
                 {checking ? (
                   "確認中…"
@@ -102,12 +102,12 @@ export function SurveyFlow() {
           )}
         </button>
         {scanError && (
-          <p role="alert" className="text-center text-sm text-rose-600">
+          <p role="alert" className="text-center text-sm font-semibold text-rose-700">
             {scanError}
           </p>
         )}
         {!badgeCode && (
-          <p className="text-center text-sm text-zinc-500">
+          <p className="text-balance text-center text-sm leading-relaxed text-roast/80">
             はじめに、お持ちの来場者バッジのQRコードを読み取ってください。
             <br />
             読み取れないときは、ブースのスタッフにお声がけください。
@@ -123,7 +123,7 @@ export function SurveyFlow() {
             const data = new FormData(e.currentTarget);
             startSubmit(() => action(data));
           }}
-          className="flex animate-[fadein_0.4s_ease-out] flex-col gap-6"
+          className="flex animate-[fadein_0.4s_ease-out] flex-col gap-4"
         >
           <input type="hidden" name="badgeCode" value={badgeCode} />
 
@@ -131,19 +131,19 @@ export function SurveyFlow() {
             <QuestionField key={q.id} question={q} number={i + 1} />
           ))}
 
-          <label className="flex items-start gap-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-100">
+          <label className="flex items-start gap-3 rounded-2xl bg-gold/15 p-4 text-sm text-roast">
             <input
               name="consent"
               type="checkbox"
               checked={consent}
               onChange={(e) => setConsent(e.target.checked)}
-              className="mt-0.5 size-5 shrink-0"
+              className="mt-0.5 size-5 shrink-0 accent-occ"
             />
             <span>{CONSENT_TEXT}</span>
           </label>
 
           {state.error && (
-            <p role="alert" className="text-sm text-rose-600">
+            <p role="alert" className="text-sm font-semibold text-rose-700">
               {state.error}
             </p>
           )}
@@ -151,8 +151,9 @@ export function SurveyFlow() {
           <button
             type="submit"
             disabled={pending || !consent}
-            className="rounded-xl bg-zinc-900 py-4 text-lg font-semibold text-white disabled:cursor-not-allowed disabled:bg-zinc-300 disabled:text-zinc-500 dark:bg-white dark:text-zinc-900 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-500"
+            className="mt-2 flex items-center justify-center gap-2 rounded-full bg-occ py-4 text-lg font-bold text-white shadow-lg shadow-occ/30 transition-transform active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-roast/15 disabled:text-roast/40 disabled:shadow-none"
           >
+            <Coffee className="size-5" aria-hidden />
             {pending ? "送信中…" : "回答してチケットを受け取る"}
           </button>
         </form>
@@ -171,35 +172,40 @@ export function SurveyFlow() {
 
 function QuestionField({ question: q, number }: { question: Question; number: number }) {
   const legend = (
-    <>
-      <span className="mr-1 text-zinc-500">Q{number}.</span>
-      {q.label}
-      {!q.required && <span className="ml-1 text-xs font-normal text-zinc-500">（任意）</span>}
-    </>
+    <span className="flex items-start gap-2">
+      <span className="mt-px flex size-6 shrink-0 items-center justify-center rounded-full bg-espresso font-slab text-xs text-gold">
+        {number}
+      </span>
+      <span>
+        {q.label}
+        {!q.required && <span className="ml-1 text-xs font-normal text-roast/60">（任意）</span>}
+      </span>
+    </span>
   );
+  const card = "rounded-2xl bg-paper p-4 shadow-sm ring-1 ring-roast/10";
 
   if (q.kind === "text") {
     return (
-      <label className="flex flex-col gap-2 font-semibold">
-        <span>{legend}</span>
+      <label className={`${card} flex flex-col gap-3 font-semibold`}>
+        {legend}
         <textarea
           name={q.id}
           rows={4}
           maxLength={q.maxLength}
           required={q.required}
-          className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-3 text-base font-normal dark:border-zinc-700 dark:bg-zinc-900"
+          className="w-full rounded-xl border border-roast/20 bg-white px-3 py-3 text-base font-normal outline-none focus:border-occ focus:ring-2 focus:ring-occ/20"
         />
       </label>
     );
   }
 
   return (
-    <fieldset className="flex flex-col gap-2">
-      <legend className="mb-2 font-semibold">{legend}</legend>
+    <fieldset className={`${card} flex flex-col gap-2`}>
+      <legend className="float-left mb-2 w-full font-semibold">{legend}</legend>
       {q.choices.map((c) => (
         <label
           key={c.value}
-          className="flex items-center gap-3 rounded-xl border border-zinc-200 p-3 has-checked:border-zinc-900 has-checked:bg-zinc-100 dark:border-zinc-800 dark:has-checked:border-white dark:has-checked:bg-zinc-900"
+          className="flex items-center gap-3 rounded-xl border border-roast/15 bg-white p-3 transition-colors has-checked:border-occ has-checked:bg-occ/10 has-checked:font-semibold"
         >
           <input
             type={q.kind === "single" ? "radio" : "checkbox"}
@@ -207,7 +213,7 @@ function QuestionField({ question: q, number }: { question: Question; number: nu
             value={c.value}
             // 複数選択の「1つ以上」はブラウザでは検証できないので、サーバ側で確かめる
             required={q.kind === "single" && q.required}
-            className="size-5 shrink-0"
+            className="size-5 shrink-0 accent-occ"
           />
           <span>{c.label}</span>
         </label>

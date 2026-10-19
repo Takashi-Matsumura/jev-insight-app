@@ -44,3 +44,6 @@ next-env.d.ts
 /data
 
 !.env.local.example
+
+# OCCカフェのロゴ（商標入りなので公開リポジトリに入れない。本番の Mac にだけ置く）
+/public/survey/

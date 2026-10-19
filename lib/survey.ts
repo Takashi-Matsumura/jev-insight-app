@@ -69,6 +69,10 @@ export const QUESTIONS: readonly Question[] = [
 // TODO: 社名とプライバシーポリシーの案内が決まったら差し替える
 export const CONSENT_TEXT = "ご回答の内容と来場者バッジの情報を、当社からのご案内のために利用することに同意します";
 
+// OCCカフェのロゴ。商標入りなので Git には入れず、本番の public/survey/ にだけ置く（README の「ロゴ」を参照）。
+// URL が /survey/ の下なので前段の認証の外に出ている。/_next/image は認証の内側なので、変換は通さない（unoptimized）
+export const CAFE_LOGO = { src: "/survey/occ-cafe-logo.png", width: 640, height: 692 } as const;
+
 // 回答済みの端末がチケットに戻れるよう、チケットの token を localStorage に覚えておくキー
 export const TICKET_STORAGE_KEY = "survey.ticket";
 
