@@ -70,29 +70,29 @@ export function TicketActions({ token, redeemed }: { token: string; redeemed: bo
 
   return (
     <div className="flex flex-col gap-6">
-      <p className="flex items-center justify-center gap-1 font-mono text-lg tabular-nums text-zinc-500">
+      <p className="flex items-center justify-center gap-1 font-mono text-lg tabular-nums text-roast/70">
         <Clock className="size-4" aria-hidden />
         {now}
       </p>
 
       {redeemed ? (
-        <p className="text-center text-sm text-zinc-500">このチケットは使用済みです。ご来場ありがとうございました。</p>
+        <p className="text-center text-sm text-roast/80">このチケットは使用済みです。ご来場ありがとうございました。</p>
       ) : (
         <>
           <p className="text-balance text-center leading-relaxed">
             コーヒーの受け取り場所で、この画面をスタッフにお見せください。
             <br />
-            <span className="text-sm text-zinc-500">下のボタンはスタッフが操作します。ご自身では押さないでください。</span>
+            <span className="text-sm text-roast/70">下のボタンはスタッフが操作します。ご自身では押さないでください。</span>
           </p>
 
-          <div className="flex flex-col gap-2 rounded-2xl border border-dashed border-zinc-300 p-4 dark:border-zinc-700">
-            <p className="text-center text-xs font-semibold text-zinc-500">スタッフ用</p>
+          <div className="flex flex-col gap-2 rounded-2xl border border-dashed border-roast/30 p-4">
+            <p className="text-center text-xs font-semibold text-roast/60">スタッフ用</p>
             {confirming ? (
               <div className="flex gap-2">
-                <button type="button" onClick={() => setConfirming(false)} className="flex-1 rounded-xl border border-zinc-300 py-3 font-semibold dark:border-zinc-700">
+                <button type="button" onClick={() => setConfirming(false)} className="flex-1 rounded-xl border border-roast/25 bg-paper py-3 font-semibold">
                   やめる
                 </button>
-                <button type="button" onClick={redeem} className="flex-1 rounded-xl bg-zinc-900 py-3 font-semibold text-white dark:bg-white dark:text-zinc-900">
+                <button type="button" onClick={redeem} className="flex-1 rounded-xl bg-espresso py-3 font-semibold text-crema">
                   お渡し済みにする
                 </button>
               </div>
@@ -109,18 +109,18 @@ export function TicketActions({ token, redeemed }: { token: string; redeemed: bo
                 onClick={(e) => {
                   if (e.detail === 0) setConfirming(true);
                 }}
-                className="relative touch-none select-none overflow-hidden rounded-xl border border-zinc-300 py-4 font-semibold [-webkit-touch-callout:none] disabled:opacity-50 dark:border-zinc-700"
+                className="relative touch-none select-none overflow-hidden rounded-xl border border-roast/25 bg-paper py-4 font-semibold [-webkit-touch-callout:none] disabled:opacity-50"
               >
                 <span
                   aria-hidden
-                  className="absolute inset-y-0 left-0 bg-emerald-200 dark:bg-emerald-800"
+                  className="absolute inset-y-0 left-0 bg-gold/40"
                   style={{ width: holding ? "100%" : "0%", transition: holding ? `width ${HOLD_MS}ms linear` : "none" }}
                 />
                 <span className="relative">{pending ? "更新中…" : "長押しでお渡し済みにする"}</span>
               </button>
             )}
             {error && (
-              <p role="alert" className="text-center text-sm text-rose-600">
+              <p role="alert" className="text-center text-sm font-semibold text-rose-700">
                 {error}
               </p>
             )}
