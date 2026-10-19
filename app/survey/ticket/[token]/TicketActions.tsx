@@ -27,10 +27,15 @@ export function TicketActions({ token, redeemed }: { token: string; redeemed: bo
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    // アンケートを開き直したときに、このチケットへ戻れるようにする
+    // アンケートを開き直したときに、このチケットへ戻れるようにする。
+    // お渡し済みになったら忘れる（スタッフのスマホを貸したとき、次の来場者に前の人の「回答済み」を出さない）
     try {
-      localStorage.setItem(TICKET_STORAGE_KEY, token);
+      if (!redeemed) localStorage.setItem(TICKET_STORAGE_KEY, token);
+      else if (localStorage.getItem(TICKET_STORAGE_KEY) === token) localStorage.removeItem(TICKET_STORAGE_KEY);
     } catch {}
+  }, [token, redeemed]);
+
+  useEffect(() => {
     // 画面を表に戻したときに、お渡し済みかどうかを取り直す
     const reload = () => {
       if (document.visibilityState === "visible") router.refresh();
@@ -41,7 +46,7 @@ export function TicketActions({ token, redeemed }: { token: string; redeemed: bo
       document.removeEventListener("visibilitychange", reload);
       window.removeEventListener("pageshow", reload);
     };
-  }, [token, router]);
+  }, [router]);
 
   const redeem = () => {
     setConfirming(false);
