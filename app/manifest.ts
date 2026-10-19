@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 
 // 担当者がスマホのホーム画面に置いて使う。アイコンは public/icons/ にある
+// 当日はアンケート回答（リード獲得）が先で、課題メモはその後なので、アンケート回答の画面から開く
 // （このファイルとアイコンは、前段の認証の外に出す必要がある。README の「公開」を参照）
 export default function manifest(): MetadataRoute.Manifest {
   return {
@@ -9,7 +10,7 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: "課題メモ",
     description: "展示会ブースでの会話から来場者の課題を見つける",
     lang: "ja",
-    start_url: "/",
+    start_url: "/responses",
     scope: "/",
     display: "standalone",
     orientation: "portrait",

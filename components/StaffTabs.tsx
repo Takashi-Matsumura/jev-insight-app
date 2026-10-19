@@ -2,11 +2,11 @@ import { ClipboardList, MessagesSquare } from "lucide-react";
 import Link from "next/link";
 
 const TABS = [
-  { key: "memo", href: "/", label: "課題メモ", Icon: MessagesSquare },
   { key: "survey", href: "/responses", label: "アンケート回答", Icon: ClipboardList },
+  { key: "memo", href: "/", label: "課題メモ", Icon: MessagesSquare },
 ] as const;
 
-// 担当者用の 2 つの一覧（課題メモ／アンケート回答）を切り替える
+// 担当者用の 2 つの一覧（アンケート回答／課題メモ）を切り替える。当日の流れの順に並べる
 export function StaffTabs({ current }: { current: (typeof TABS)[number]["key"] }) {
   return (
     <nav className="mb-4 flex gap-1 rounded-xl bg-zinc-100 p-1 text-sm font-semibold dark:bg-zinc-900">
