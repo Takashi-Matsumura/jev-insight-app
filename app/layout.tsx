@@ -15,11 +15,15 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "ブース課題メモ",
   description: "展示会ブースでの会話から来場者の課題を見つける",
+  // iPhone の「ホーム画面に追加」用。マニフェストは app/manifest.ts
+  appleWebApp: { capable: true, title: "課題メモ", statusBarStyle: "default" },
+  icons: { apple: "/icons/apple-touch-icon.png" },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  themeColor: "#18181b",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
