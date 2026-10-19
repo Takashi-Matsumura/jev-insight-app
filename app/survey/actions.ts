@@ -6,7 +6,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { checkBadgeCode, parseBadge } from "@/lib/badge";
 import { getDb, schema } from "@/lib/db";
-import { allowReanswer, parseAnswers } from "@/lib/survey";
+import { ALREADY_ANSWERED_PARAM, allowReanswer, parseAnswers } from "@/lib/survey";
 
 // /survey 配下は来場者に公開する（前段の認証を通さない）。
 // ここには来場者が実行してよい操作だけを置き、DB の行そのものは返さない。
@@ -21,12 +21,13 @@ async function checkBadge(raw: unknown) {
   return checkBadgeCode(typeof raw === "string" ? raw : "", host);
 }
 
-async function ticketPath(badgeCode: string) {
+// 回答済みのバッジのチケットへの URL。チケットの画面に「回答済みです」と出すための印を付ける
+async function answeredTicketPath(badgeCode: string) {
   const [row] = await getDb()
     .select({ token: surveyResponses.token })
     .from(surveyResponses)
     .where(eq(surveyResponses.badgeCode, badgeCode));
-  return row ? `/survey/ticket/${row.token}` : null;
+  return row ? `/survey/ticket/${row.token}?${ALREADY_ANSWERED_PARAM}=1` : null;
 }
 
 // QR を読んだ直後に呼ぶ。回答済みのバッジなら、設問を出さずにチケットへ進める
@@ -34,7 +35,7 @@ export async function findTicket(badgeCode: string): Promise<SurveyState> {
   const badge = await checkBadge(badgeCode);
   if (!badge.ok) return { error: badge.error };
   if (allowReanswer()) return {};
-  const path = await ticketPath(badge.code);
+  const path = await answeredTicketPath(badge.code);
   if (path) redirect(path);
   return {};
 }
@@ -63,7 +64,7 @@ export async function submitSurvey(_prev: SurveyState, formData: FormData): Prom
     .onConflictDoNothing({ target: surveyResponses.badgeCode })
     .returning({ token: surveyResponses.token });
 
-  const path = created ? `/survey/ticket/${created.token}` : await ticketPath(badge.code);
+  const path = created ? `/survey/ticket/${created.token}` : await answeredTicketPath(badge.code);
   if (!path) return { error: "送信できませんでした。もう一度お試しください。" };
   redirect(path);
 }

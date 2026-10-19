@@ -4,7 +4,7 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { getDb, schema } from "@/lib/db";
-import { CAFE_LOGO, ticketNumber } from "@/lib/survey";
+import { ALREADY_ANSWERED_PARAM, CAFE_LOGO, ticketNumber } from "@/lib/survey";
 import { TicketActions } from "./TicketActions";
 
 const TOKEN_PATTERN = /^[0-9a-f-]{36}$/;
@@ -13,6 +13,7 @@ const TOKEN_PATTERN = /^[0-9a-f-]{36}$/;
 export default async function TicketPage(props: PageProps<"/survey/ticket/[token]">) {
   await connection();
   const { token } = await props.params;
+  const alreadyAnswered = (await props.searchParams)[ALREADY_ANSWERED_PARAM] === "1";
   if (!TOKEN_PATTERN.test(token)) notFound();
   const [ticket] = await getDb()
     .select({ id: schema.surveyResponses.id, redeemedAt: schema.surveyResponses.redeemedAt })
@@ -24,7 +25,15 @@ export default async function TicketPage(props: PageProps<"/survey/ticket/[token
 
   return (
     <main className="mx-auto flex w-full max-w-lg flex-col gap-6 p-4 pb-6">
-      <p className="mt-4 text-center text-sm font-semibold text-roast">ご回答ありがとうございました</p>
+      {alreadyAnswered ? (
+        // 回答済みのバッジを読み直したときは、今答えたのではないと分かるようにする
+        <p role="status" className="mt-4 text-balance text-center text-sm text-roast">
+          <span className="block font-semibold">このバッジは回答済みです</span>
+          <span className="block text-roast/80">最初にお答えいただいたときのチケットを表示しています</span>
+        </p>
+      ) : (
+        <p className="mt-4 text-center text-sm font-semibold text-roast">ご回答ありがとうございました</p>
+      )}
 
       {/* 紙のチケットに見立てる。左右の切り欠きは背景と同じ色の丸 */}
       <section className="relative overflow-hidden rounded-2xl bg-paper text-center shadow-xl shadow-roast/20 ring-1 ring-roast/10">
