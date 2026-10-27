@@ -47,7 +47,7 @@ export function NewSessionForm() {
         <button
           type="button"
           onClick={() => setScanning(true)}
-          aria-label={badgeCode ? "QRコードを読み直す" : "来場者バッジのQRを読み取る"}
+          aria-label={badgeCode ? "QRコードを読み直す" : "来場者証のQRを読み取る"}
           className={`flex aspect-square w-56 flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed p-4 text-center transition-colors ${
             badgeCode
               ? "border-emerald-500 bg-emerald-50 text-emerald-900 dark:border-emerald-600 dark:bg-emerald-950 dark:text-emerald-100"
@@ -67,7 +67,7 @@ export function NewSessionForm() {
             <>
               <QrIcon className="size-20" aria-hidden />
               <span className="font-semibold leading-snug">
-                来場者バッジの
+                来場者証の
                 <br />
                 QRを読み取る
               </span>

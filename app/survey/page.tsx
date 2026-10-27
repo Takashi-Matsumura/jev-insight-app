@@ -5,7 +5,7 @@ import { CAFE_LOGO } from "@/lib/survey";
 import { SurveyFlow } from "./SurveyFlow";
 
 const STEPS = [
-  { Icon: QrIcon, label: "バッジのQRを読み取る" },
+  { Icon: QrIcon, label: "来場者証のQRを読み取る" },
   { Icon: ClipboardList, label: "アンケートに回答" },
   { Icon: Coffee, label: "コーヒーをどうぞ" },
 ] as const;

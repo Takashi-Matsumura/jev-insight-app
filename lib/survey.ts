@@ -67,20 +67,20 @@ export const QUESTIONS: readonly Question[] = [
 ];
 
 // TODO: 社名とプライバシーポリシーの案内が決まったら差し替える
-export const CONSENT_TEXT = "ご回答の内容と来場者バッジの情報を、当社からのご案内のために利用することに同意します";
+export const CONSENT_TEXT = "ご回答の内容と来場者証の情報を、当社からのご案内のために利用することに同意します";
 
 // OCCカフェのロゴ。商標入りなので Git には入れず、本番の public/survey/ にだけ置く（README の「ロゴ」を参照）。
 // URL が /survey/ の下なので前段の認証の外に出ている。/_next/image は認証の内側なので、変換は通さない（unoptimized）
-export const CAFE_LOGO = { src: "/survey/occ-cafe-logo.png", width: 640, height: 692 } as const;
+export const CAFE_LOGO = { src: "/survey/occ-cafe-logo.svg", width: 283, height: 283 } as const;
 
-// 回答済みのバッジを読み直したときに、チケットの URL に付ける印（チケットの画面で「回答済みです」と出す）
+// 回答済みの来場者証を読み直したときに、チケットの URL に付ける印（チケットの画面で「回答済みです」と出す）
 export const ALREADY_ANSWERED_PARAM = "answered";
 
 // 回答済みの端末がチケットに戻れるよう、チケットの token を localStorage に覚えておくキー
 export const TICKET_STORAGE_KEY = "survey.ticket";
 
-// 社内テスト用: 1 にすると、同じ来場者バッジで何度でも答え直せる（前の回答とチケットは消える）。
-// 当日は設定しない（既定は 1 バッジ 1 枚）
+// 社内テスト用: 1 にすると、同じ来場者証で何度でも答え直せる（前の回答とチケットは消える）。
+// 当日は設定しない（既定は来場者証 1 枚につきチケット 1 枚）
 export function allowReanswer() {
   return process.env.SURVEY_ALLOW_REANSWER === "1";
 }

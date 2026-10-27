@@ -15,7 +15,7 @@ export default async function ResponsesPage() {
   await connection();
   const db = getDb();
   const responses = await db.select().from(schema.surveyResponses).orderBy(desc(schema.surveyResponses.createdAt));
-  // 同じ来場者バッジの課題メモがあれば、行からたどれるようにする
+  // 同じ来場者証の課題メモがあれば、行からたどれるようにする
   const sessions = await db
     .select({ id: schema.sessions.id, badgeCode: schema.sessions.badgeCode })
     .from(schema.sessions)
@@ -42,7 +42,7 @@ export default async function ResponsesPage() {
 
       {allowReanswer() && (
         <p role="status" className="mb-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-100">
-          テストモード中です。同じ来場者バッジで何度でも答え直せます（前の回答とチケットは消えます）。当日までに
+          テストモード中です。同じ来場者証で何度でも答え直せます（前の回答とチケットは消えます）。当日までに
           <code className="mx-1">SURVEY_ALLOW_REANSWER</code>を外してください。
         </p>
       )}

@@ -17,7 +17,7 @@ export default async function LeadPage(props: PageProps<"/leads/[id]">) {
   const session = await getSession(id);
   if (!session) notFound();
   const items = await listUtterances(id);
-  // 同じ来場者バッジでアンケートに答えていれば、その回答も見せる
+  // 同じ来場者証でアンケートに答えていれば、その回答も見せる
   const [survey] = session.badgeCode
     ? await getDb().select().from(schema.surveyResponses).where(eq(schema.surveyResponses.badgeCode, session.badgeCode))
     : [];
