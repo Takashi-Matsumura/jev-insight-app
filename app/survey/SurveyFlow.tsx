@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight, CircleCheck, Coffee, RefreshCw, Ticket } from "lucide-react";
+import { CircleCheck, Coffee, RefreshCw, Ticket } from "lucide-react";
 import Link from "next/link";
 import { useActionState, useState, useSyncExternalStore, useTransition } from "react";
 import { QrIcon } from "@/components/QrIcon";
@@ -18,6 +18,11 @@ function readTicket() {
   }
 }
 
+// コーヒーのコースターのような丸いボタン。内側の点線はゴールド
+const CIRCLE_BUTTON =
+  "relative flex aspect-square w-60 flex-col items-center justify-center gap-3 rounded-full p-6 text-center shadow-xl transition-transform active:scale-95";
+const CIRCLE_DASH = <span aria-hidden className="absolute inset-3 rounded-full border-2 border-dashed border-gold/70" />;
+
 // 来場者証の QR を読んでから、設問に進む（QR が読めないと回答できない）
 export function SurveyFlow() {
   const [state, action, pending] = useActionState<SurveyState, FormData>(submitSurvey, {});
@@ -27,8 +32,9 @@ export function SurveyFlow() {
   const [checking, startCheck] = useTransition();
   const [, startSubmit] = useTransition();
   const [consent, setConsent] = useState(false);
-  // この端末で回答済みなら、チケットに戻れるようにする
+  // この端末で回答済みなら、丸ボタンをチケットへの入口に切り替える（ページを閉じても戻れるように）
   const savedTicket = useSyncExternalStore(noopSubscribe, readTicket, () => null);
+  const showSavedTicket = savedTicket !== null && !badgeCode && !checking;
 
   const handleDetect = (value: string) => {
     setScanning(false);
@@ -49,70 +55,76 @@ export function SurveyFlow() {
 
   return (
     <div className="flex flex-col gap-6">
-      {savedTicket && !badgeCode && (
-        <Link
-          href={`/survey/ticket/${savedTicket}`}
-          className="flex items-center gap-3 rounded-2xl bg-espresso p-4 text-crema shadow-lg shadow-roast/20"
-        >
-          <Ticket className="size-6 shrink-0 text-gold" aria-hidden />
-          <span className="flex-1">
-            <span className="block font-semibold">回答済みです</span>
-            <span className="block text-sm opacity-80">コーヒー引換チケットを表示する</span>
-          </span>
-          <ChevronRight className="size-5 shrink-0" aria-hidden />
-        </Link>
-      )}
-
       <section className="flex flex-col items-center gap-3">
-        <button
-          type="button"
-          onClick={() => setScanning(true)}
-          disabled={checking}
-          aria-label={badgeCode ? "QRコードを読み直す" : "来場者証のQRを読み取る"}
-          // コーヒーのコースターのような丸いボタン。内側の点線はゴールド
-          className={`relative flex aspect-square w-60 flex-col items-center justify-center gap-3 rounded-full p-6 text-center shadow-xl transition-transform active:scale-95 disabled:opacity-60 ${
-            badgeCode ? "bg-paper text-roast shadow-roast/15 ring-4 ring-occ" : "bg-espresso text-crema shadow-roast/30"
-          }`}
-        >
-          <span aria-hidden className="absolute inset-3 rounded-full border-2 border-dashed border-gold/70" />
-          {badgeCode ? (
-            <>
-              <CircleCheck className="size-16 text-occ" strokeWidth={1.5} aria-hidden />
-              <span className="font-semibold">読み取りました</span>
-              <span className="flex items-center gap-1 text-sm opacity-80">
-                <RefreshCw className="size-4" aria-hidden />
-                読み直す
-              </span>
-            </>
-          ) : (
-            <>
-              <QrIcon className="size-20 text-gold" aria-hidden />
-              <span className="font-semibold leading-snug">
-                {checking ? (
-                  "確認中…"
-                ) : (
-                  <>
-                    来場者証の
-                    <br />
-                    QRを読み取る
-                  </>
-                )}
-              </span>
-            </>
-          )}
-        </button>
+        {showSavedTicket ? (
+          <Link href={`/survey/ticket/${savedTicket}`} className={`${CIRCLE_BUTTON} bg-espresso text-crema shadow-roast/30`}>
+            {CIRCLE_DASH}
+            <Ticket className="size-20 text-gold" strokeWidth={1.5} aria-hidden />
+            <span className="font-semibold leading-snug">
+              コーヒー引換
+              <br />
+              チケットを表示する
+            </span>
+          </Link>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setScanning(true)}
+            disabled={checking}
+            aria-label={badgeCode ? "QRコードを読み直す" : "来場者証のQRを読み取る"}
+            className={`${CIRCLE_BUTTON} disabled:opacity-60 ${
+              badgeCode ? "bg-paper text-roast shadow-roast/15 ring-4 ring-occ" : "bg-espresso text-crema shadow-roast/30"
+            }`}
+          >
+            {CIRCLE_DASH}
+            {badgeCode ? (
+              <>
+                <CircleCheck className="size-16 text-occ" strokeWidth={1.5} aria-hidden />
+                <span className="font-semibold">読み取りました</span>
+                <span className="flex items-center gap-1 text-sm opacity-80">
+                  <RefreshCw className="size-4" aria-hidden />
+                  読み直す
+                </span>
+              </>
+            ) : (
+              <>
+                <QrIcon className="size-20 text-gold" aria-hidden />
+                <span className="font-semibold leading-snug">
+                  {checking ? (
+                    "確認中…"
+                  ) : (
+                    <>
+                      来場者証の
+                      <br />
+                      QRを読み取る
+                    </>
+                  )}
+                </span>
+              </>
+            )}
+          </button>
+        )}
         {scanError && (
           <p role="alert" className="text-center text-sm font-semibold text-rose-700">
             {scanError}
           </p>
         )}
-        {!badgeCode && (
-          <p className="text-balance text-center text-sm leading-relaxed text-roast/80">
-            はじめに、お持ちの来場者証のQRコードを読み取ってください。
-            <br />
-            読み取れないときは、ブースのスタッフにお声がけください。
-          </p>
-        )}
+        {!badgeCode &&
+          (showSavedTicket ? (
+            <p className="text-balance text-center text-sm leading-relaxed text-roast/80">
+              この端末では回答済みです。チケットはいつでもここから表示できます。
+              <br />
+              <button type="button" onClick={() => setScanning(true)} className="mt-2 font-semibold text-occ underline underline-offset-4">
+                別の来場者証で回答する
+              </button>
+            </p>
+          ) : (
+            <p className="text-balance text-center text-sm leading-relaxed text-roast/80">
+              はじめに、お持ちの来場者証のQRコードを読み取ってください。
+              <br />
+              読み取れないときは、ブースのスタッフにお声がけください。
+            </p>
+          ))}
       </section>
 
       {badgeCode && (
