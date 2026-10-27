@@ -6,6 +6,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { checkBadgeCode, parseBadge } from "@/lib/badge";
 import { getDb, schema } from "@/lib/db";
+import { allowSurveyAction, clientIp, recordNewTicket } from "@/lib/rate-limit";
 import { ALREADY_ANSWERED_PARAM, allowReanswer, parseAnswers } from "@/lib/survey";
 
 // /survey 配下は来場者に公開する（前段の認証を通さない）。
@@ -14,6 +15,8 @@ import { ALREADY_ANSWERED_PARAM, allowReanswer, parseAnswers } from "@/lib/surve
 const { surveyResponses } = schema;
 
 export type SurveyState = { error?: string };
+
+const BUSY = "混み合っています。少し待ってからもう一度お試しください";
 
 async function checkBadge(raw: unknown) {
   const h = await headers();
@@ -32,6 +35,7 @@ async function answeredTicketPath(badgeCode: string) {
 
 // QR を読んだ直後に呼ぶ。回答済みの来場者証なら、設問を出さずにチケットへ進める
 export async function findTicket(badgeCode: string): Promise<SurveyState> {
+  if (!allowSurveyAction(await clientIp())) return { error: BUSY };
   const badge = await checkBadge(badgeCode);
   if (!badge.ok) return { error: badge.error };
   if (allowReanswer()) return {};
@@ -41,6 +45,8 @@ export async function findTicket(badgeCode: string): Promise<SurveyState> {
 }
 
 export async function submitSurvey(_prev: SurveyState, formData: FormData): Promise<SurveyState> {
+  const ip = await clientIp();
+  if (!allowSurveyAction(ip)) return { error: BUSY };
   const badge = await checkBadge(formData.get("badgeCode"));
   if (!badge.ok) return { error: badge.error };
   const parsed = parseAnswers(formData);
@@ -64,6 +70,7 @@ export async function submitSurvey(_prev: SurveyState, formData: FormData): Prom
     .onConflictDoNothing({ target: surveyResponses.badgeCode })
     .returning({ token: surveyResponses.token });
 
+  if (created) recordNewTicket(ip);
   const path = created ? `/survey/ticket/${created.token}` : await answeredTicketPath(badge.code);
   if (!path) return { error: "送信できませんでした。もう一度お試しください。" };
   redirect(path);
@@ -71,6 +78,7 @@ export async function submitSurvey(_prev: SurveyState, formData: FormData): Prom
 
 // コーヒーを渡したときに、担当者が来場者の画面で実行する。すでにお渡し済みなら何もしない
 export async function redeemTicket(token: string): Promise<SurveyState> {
+  if (!allowSurveyAction(await clientIp())) return { error: BUSY };
   if (typeof token !== "string") return { error: "チケットが見つかりません" };
   const db = getDb();
   await db
