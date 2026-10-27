@@ -72,6 +72,8 @@ cp .env.local.example .env.local   # TYPESAFE_API_KEY を設定する
 | `GEMMA_URL` | `http://127.0.0.1:8080` | llama-server の URL |
 | `RELEVANCE_THRESHOLD` | `0.5` | この値以上の発言だけを課題として保存します |
 | `DATABASE_PATH` | `./data/insight.db` | SQLite のファイルの場所 |
+| `CF_ACCESS_TEAM_DOMAIN` | （なし） | Cloudflare Access のチームのドメイン（`<チーム名>.cloudflareaccess.com`）。下の「スマホから使う」を参照 |
+| `CF_ACCESS_AUD` | （なし） | 担当者用の画面を守っている Access アプリの AUD タグ |
 | `SURVEY_ALLOW_REANSWER` | （なし） | 社内テスト用。`1` にすると、同じ来場者証で何度でもアンケートに答え直せます（前の回答とチケットは消えます）。当日は設定しないでください |
 
 whisper-server と llama-server を起動します。
@@ -118,7 +120,9 @@ DB のマイグレーションは、アプリが最初に DB を開いたとき�
 公開ページを足すときの注意:
 
 - 担当者だけが使う操作は、Server Action ではなく Route Handler（`/api/...`）で作ります。Server Action は、公開しているページへの POST からも呼び出せるためです。
-- 既存の `createSession`（課題メモの新規作成）は Server Action のままです。公開パス経由で呼ばれても不要な行が作られるだけで、データは読み出せません。
+- 既存の `createSession`（課題メモの新規作成）は Server Action のままなので、最初に `isStaffRequest()`（`lib/access.ts`）で、Access を通ったリクエストかを確かめています。Access がログイン済みのリクエストに付ける署名付きのトークン（`Cf-Access-Jwt-Assertion`）を、`CF_ACCESS_TEAM_DOMAIN` と `CF_ACCESS_AUD` で検証します。担当者用の Server Action を足すときも、同じように最初に呼んでください。
+  - 2 つの値は、ログイン画面の URL から分かります。ドメインは `https://<チーム名>.cloudflareaccess.com/...` の部分、AUD タグは `kid=` の値です。ダッシュボードでは、Access のアプリの設定にある「アプリケーション Audience (AUD) タグ」です。
+  - 本番（`NODE_ENV=production`）で 2 つの値が無いときは、課題メモを作れません。手元の開発（`npm run dev`）では確かめずに通します。
 - 流量制限はアプリ側にありません。必要なら前段（Cloudflare の Rate Limiting など）で絞ってください。
 - 来場者証の QR の形式は確かめていません。どんな QR でもチケットが出るので、コーヒーを渡すときに実物の来場者証を確認してください。
 

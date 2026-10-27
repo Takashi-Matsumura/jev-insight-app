@@ -2,9 +2,12 @@
 
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { isStaffRequest } from "@/lib/access";
 import { getDb, schema } from "@/lib/db";
 
 // 認証はアプリの前段（Cloudflare Access）で行う。アプリ側ではログインを持たない。
+// ただし Server Actions は公開している /survey の URL からも呼べるので、スタッフ用の操作は
+// 最初に isStaffRequest() で Access を通ったリクエストかを確かめる（スタッフ用の操作を増やすときも同じ）。
 
 const field = (max: number) => z.string().trim().max(max).default("");
 
@@ -26,6 +29,7 @@ const inputSchema = z
 export type CreateState = { error?: string };
 
 export async function createSession(_prev: CreateState, formData: FormData): Promise<CreateState> {
+  if (!(await isStaffRequest())) return { error: "ログインの有効期限が切れました。画面を開き直してください" };
   const parsed = inputSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
