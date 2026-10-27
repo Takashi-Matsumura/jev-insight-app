@@ -1,5 +1,6 @@
 import "server-only";
 import { z } from "zod";
+import { count, measure } from "./metrics";
 
 // TypeSafe AI Jev (System One) の REST クライアント。
 // 仕様: https://docs.typesafe.ai/api.md
@@ -85,10 +86,11 @@ export class JevError extends Error {
   }
 }
 
-export async function systemOne<Q extends Record<string, Question>>(
-  state: string | object,
-  questions: Q,
-): Promise<Answers<Q>> {
+export function systemOne<Q extends Record<string, Question>>(state: string | object, questions: Q): Promise<Answers<Q>> {
+  return measure("jev", () => ask(state, questions));
+}
+
+async function ask<Q extends Record<string, Question>>(state: string | object, questions: Q): Promise<Answers<Q>> {
   const apiKey = process.env.TYPESAFE_API_KEY;
   if (!apiKey) throw new JevError("TYPESAFE_API_KEY が設定されていません");
 
@@ -101,6 +103,7 @@ export async function systemOne<Q extends Record<string, Question>>(
     });
 
     if ((res.status === 429 || res.status === 529) && attempt < MAX_RETRIES) {
+      count(`jev:retry-${res.status}`);
       await new Promise((r) => setTimeout(r, 500 * 2 ** attempt));
       continue;
     }

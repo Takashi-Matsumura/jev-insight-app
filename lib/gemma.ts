@@ -1,6 +1,7 @@
 import "server-only";
 import { z } from "zod";
 import type { Session, Utterance } from "./db/schema";
+import { measure } from "./metrics";
 import { summarySchema, visitorReportSchema, type Summary, type VisitorReport } from "./gemma-schema";
 import { signalLabel, TOPICS, topicLabel } from "./topics";
 
@@ -68,7 +69,11 @@ function conversationContent(session: Session, items: Utterance[]) {
   );
 }
 
-async function generate<T>(schema: z.ZodType<T>, name: string, system: string, user: string): Promise<T> {
+function generate<T>(schema: z.ZodType<T>, name: string, system: string, user: string): Promise<T> {
+  return measure(`gemma:${name}`, () => complete(schema, name, system, user));
+}
+
+async function complete<T>(schema: z.ZodType<T>, name: string, system: string, user: string): Promise<T> {
   const res = await fetch(`${GEMMA_URL}/v1/chat/completions`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

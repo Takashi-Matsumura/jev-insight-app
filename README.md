@@ -84,10 +84,10 @@ whisper-server -m ~/.local/share/whisper-models/ggml-large-v3-turbo-q5_0.bin \
   --host 127.0.0.1 --port 8090 -l ja --convert
 
 llama-server -m gemma-4-12b-it-Q4_K_M.gguf \
-  --host 127.0.0.1 --port 8080 -c 32768 --parallel 2
+  --host 127.0.0.1 --port 8080 -c 131072 --parallel 12 --kv-unified
 ```
 
-- 担当者向けと来場者向けのまとめを同時に作るため、llama-server は `--parallel 2` で起動します。
+- 会話を終えると、担当者向けと来場者向けのまとめを同時に作ります。複数のブースで同時に使うときは「ブースの数 × 2」の枠を `--parallel` で用意します（上の例は 6 ブース分）。`--kv-unified` を付けると、枠を増やしても 1 件あたりに使える文脈の長さが減りません。
 - アプリ側から thinking を無効にして呼び出します（有効だと 1 分近くかかるためです）。
 
 ## 起動
@@ -149,8 +149,23 @@ URL は `/survey/occ-cafe-logo.svg` になるので、前段の認証から外�
 | `/api/export` | 担当者 | リードの CSV（Excel で開ける UTF-8 BOM 付き） |
 | `/responses` | 担当者 | アンケート回答の一覧（お渡し済みの件数、回答の内容、課題メモへのリンク）、アンケート入口の QR 表示 |
 | `/api/export/survey` | 担当者 | アンケート回答の CSV |
+| `/metrics` | 担当者 | 負荷の記録（1 分ごとのアクセス数と処理時間）。アンケート回答の画面の「負荷の記録」から開く |
+| `/api/export/metrics` | 担当者 | 負荷の記録の CSV |
 | `/survey` | 来場者（公開） | アンケート（QR 読み取り → 設問） |
 | `/survey/ticket/[token]` | 来場者（公開） | コーヒー引換チケット |
+
+## 当日の負荷
+
+当日にアクセスがどれだけ集中したかを、あとから見られるように記録します。
+
+- **アプリの中の記録**（`lib/metrics.ts`）: 1 分ごと・種類ごとに、リクエストの件数（`proxy.ts` で数える）と、文字起こし・Jev・gemma・アンケートの操作にかかった時間、同時に動いていた数の最大を DB の `metrics` に残します。IP アドレスや回答の中身は残しません。`/metrics` で見られ、CSV にも出せます。
+- **Mac の負荷**: 当日はサーバの Mac で `scripts/monitor.sh` を動かしておきます。15 秒ごとに load average・GPU 使用率・メモリの空き・アプリのコンテナ・whisper-server・llama-server の CPU とメモリを `data/monitor-<日付>.csv` に書きます。
+
+  ```bash
+  nohup scripts/monitor.sh > /dev/null 2>&1 &   # 止めるときは pkill -f scripts/monitor.sh
+  ```
+
+- **負荷試験**（`scripts/loadtest.mjs`）: 当日の前に、手元で動かしたサーバ（DB はコピー）や whisper-server・llama-server に直接送って測ります。使い方はファイルの先頭にあります。Jev は外部の API なので、負荷試験では呼びません。
 
 ## 開発
 

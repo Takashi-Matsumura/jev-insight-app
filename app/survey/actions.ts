@@ -6,6 +6,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { checkBadgeCode, parseBadge } from "@/lib/badge";
 import { getDb, schema } from "@/lib/db";
+import { measure } from "@/lib/metrics";
 import { allowSurveyAction, clientIp, recordNewTicket } from "@/lib/rate-limit";
 import { ALREADY_ANSWERED_PARAM, allowReanswer, eventDay, eventDayLabel, parseAnswers } from "@/lib/survey";
 
@@ -35,6 +36,10 @@ async function answeredTicketPath(badgeCode: string, day: string) {
 
 // QR を読んだ直後に呼ぶ。今日回答済みの来場者証なら、設問を出さずにチケットへ進める（前の日の回答は問わない）
 export async function findTicket(badgeCode: string): Promise<SurveyState> {
+  return measure("survey:find", () => runFindTicket(badgeCode));
+}
+
+async function runFindTicket(badgeCode: string): Promise<SurveyState> {
   if (!allowSurveyAction(await clientIp())) return { error: BUSY };
   const badge = await checkBadge(badgeCode);
   if (!badge.ok) return { error: badge.error };
@@ -45,6 +50,10 @@ export async function findTicket(badgeCode: string): Promise<SurveyState> {
 }
 
 export async function submitSurvey(_prev: SurveyState, formData: FormData): Promise<SurveyState> {
+  return measure("survey:submit", () => runSubmitSurvey(formData));
+}
+
+async function runSubmitSurvey(formData: FormData): Promise<SurveyState> {
   const ip = await clientIp();
   if (!allowSurveyAction(ip)) return { error: BUSY };
   const badge = await checkBadge(formData.get("badgeCode"));
@@ -82,6 +91,10 @@ export async function submitSurvey(_prev: SurveyState, formData: FormData): Prom
 // コーヒーを渡したときに、担当者が来場者の画面で実行する。すでにお渡し済みなら何もしない。
 // チケットは回答した日だけ使える（前の日のチケットは、その日のアンケートに答え直してもらう）
 export async function redeemTicket(token: string): Promise<SurveyState> {
+  return measure("survey:redeem", () => runRedeemTicket(token));
+}
+
+async function runRedeemTicket(token: string): Promise<SurveyState> {
   if (!allowSurveyAction(await clientIp())) return { error: BUSY };
   if (typeof token !== "string") return { error: "チケットが見つかりません" };
   const db = getDb();

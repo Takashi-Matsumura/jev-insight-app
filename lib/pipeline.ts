@@ -5,6 +5,7 @@ import type { Session, Utterance } from "./db/schema";
 import { generateQuestion, summarize, writeVisitorReport } from "./gemma";
 import { systemOne } from "./jev";
 import { LEAD_QUESTIONS, leadGrade, PROBE_QUESTIONS, SETTING, UTTERANCE_QUESTIONS } from "./jev-questions";
+import { measure } from "./metrics";
 import { looksLikeProbe, PROBES, type ProbeKey } from "./probes";
 import { splitSentences, transcribe } from "./whisper";
 
@@ -125,7 +126,17 @@ async function updateInsights(sessionId: string) {
   return next;
 }
 
-export async function processChunk(
+// 8 秒ごとの録音の断片を、文字起こしから判定まで通す。1 つにかかった時間を「chunk」として測る
+export function processChunk(
+  sessionId: string,
+  audio: Blob,
+  filename: string,
+  onTranscript?: (t: { sentences: string[]; pending: string }) => void,
+) {
+  return measure("chunk", () => runChunk(sessionId, audio, filename, onTranscript));
+}
+
+async function runChunk(
   sessionId: string,
   audio: Blob,
   filename: string,
@@ -185,7 +196,11 @@ export async function alternativeQuestion(sessionId: string, currentQuestion: st
 
 // 会話終了: 残りの文字起こしを処理し、Jev で商談見込み、gemma4 で課題まとめを作る。
 // gemma4 が失敗しても会話は終了扱いにし、まとめだけ後から作り直せるようにする。
-export async function finalizeSession(sessionId: string) {
+export function finalizeSession(sessionId: string) {
+  return measure("finalize", () => runFinalize(sessionId));
+}
+
+async function runFinalize(sessionId: string) {
   const session = await getSession(sessionId);
   if (!session) throw new SessionStateError("会話が見つかりません");
 
@@ -199,7 +214,7 @@ export async function finalizeSession(sessionId: string) {
   let visitorReport = session.visitorReport ?? null;
   const errors: string[] = [];
   if (items.length > 0) {
-    // 担当者向けと来場者向けのまとめは gemma4 に並列で作らせる（llama-server は --parallel 2）
+    // 担当者向けと来場者向けのまとめは gemma4 に並列で作らせる（llama-server の枠は README の「セットアップ」を参照）
     const [lead, sum, report] = await Promise.allSettled([
       systemOne(findingsState(items), LEAD_QUESTIONS),
       summarize(session, items),

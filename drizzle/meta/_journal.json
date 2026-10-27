@@ -50,6 +50,13 @@
       "when": 1793088354273,
       "tag": "0006_survey_per_day",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1793089386743,
+      "tag": "0007_metrics",
+      "breakpoints": true
     }
   ]
 }
