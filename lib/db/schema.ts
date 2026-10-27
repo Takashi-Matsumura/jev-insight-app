@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { index, integer, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { index, integer, primaryKey, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 import type { Summary, VisitorReport } from "../gemma-schema";
 import type { SurveyAnswers } from "../survey";
 
@@ -68,6 +68,20 @@ export const surveyResponses = sqliteTable("survey_responses", {
   // コーヒーを渡した時刻。未使用なら null
   redeemedAt: integer("redeemed_at", { mode: "timestamp" }),
 }, (t) => [uniqueIndex("survey_responses_badge_code_event_day_unique").on(t.badgeCode, t.eventDay)]);
+
+// 1 分ごと・種類ごとのアクセス数と処理時間（lib/metrics.ts）。当日の負荷をあとから見るために使う
+export const metrics = sqliteTable("metrics", {
+  // その 1 分の始まり（unix 秒）
+  minute: integer("minute").notNull(),
+  // 「req:survey」（リクエスト数）や「whisper」（処理時間）など
+  key: text("key").notNull(),
+  count: integer("count").notNull(),
+  errors: integer("errors").notNull(),
+  totalMs: real("total_ms").notNull(),
+  maxMs: real("max_ms").notNull(),
+  // その 1 分の間に同時に動いていた数の最大
+  maxInflight: integer("max_inflight").notNull(),
+}, (t) => [primaryKey({ columns: [t.minute, t.key] })]);
 
 export type Session = typeof sessions.$inferSelect;
 export type Utterance = typeof utterances.$inferSelect;

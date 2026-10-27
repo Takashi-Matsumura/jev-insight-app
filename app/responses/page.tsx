@@ -65,6 +65,12 @@ export default async function ResponsesPage() {
           ))}
       </p>
 
+      <div className="mb-3 flex justify-end">
+        <NavLink href="/metrics" forward>
+          負荷の記録
+        </NavLink>
+      </div>
+
       <ul className="flex flex-col gap-2">
         {responses.map((r) => {
           const sessionId = sessionByBadge.get(r.badgeCode);

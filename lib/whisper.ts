@@ -1,5 +1,6 @@
 import "server-only";
 import { z } from "zod";
+import { measure } from "./metrics";
 
 // whisper.cpp の whisper-server（--convert 付きで起動）への文字起こしリクエスト
 
@@ -25,14 +26,15 @@ export async function transcribe(audio: Blob, filename: string): Promise<string>
   form.append("temperature", "0");
   form.append("prompt", PROMPT);
 
-  const res = await fetch(`${WHISPER_URL}/inference`, {
-    method: "POST",
-    body: form,
-    signal: AbortSignal.timeout(60_000),
+  const { text } = await measure("whisper", async () => {
+    const res = await fetch(`${WHISPER_URL}/inference`, {
+      method: "POST",
+      body: form,
+      signal: AbortSignal.timeout(60_000),
+    });
+    if (!res.ok) throw new Error(`whisper-server ${res.status}: ${(await res.text()).slice(0, 300)}`);
+    return z.object({ text: z.string() }).parse(await res.json());
   });
-  if (!res.ok) throw new Error(`whisper-server ${res.status}: ${(await res.text()).slice(0, 300)}`);
-
-  const { text } = z.object({ text: z.string() }).parse(await res.json());
   return text.replace(/\s*\n\s*/g, "").trim();
 }
 
