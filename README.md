@@ -123,7 +123,10 @@ DB のマイグレーションは、アプリが最初に DB を開いたとき�
 - 既存の `createSession`（課題メモの新規作成）は Server Action のままなので、最初に `isStaffRequest()`（`lib/access.ts`）で、Access を通ったリクエストかを確かめています。Access がログイン済みのリクエストに付ける署名付きのトークン（`Cf-Access-Jwt-Assertion`）を、`CF_ACCESS_TEAM_DOMAIN` と `CF_ACCESS_AUD` で検証します。担当者用の Server Action を足すときも、同じように最初に呼んでください。
   - 2 つの値は、ログイン画面の URL から分かります。ドメインは `https://<チーム名>.cloudflareaccess.com/...` の部分、AUD タグは `kid=` の値です。ダッシュボードでは、Access のアプリの設定にある「アプリケーション Audience (AUD) タグ」です。
   - 本番（`NODE_ENV=production`）で 2 つの値が無いときは、課題メモを作れません。手元の開発（`npm run dev`）では確かめずに通します。
-- 流量制限はアプリ側にありません。必要なら前段（Cloudflare の Rate Limiting など）で絞ってください。
+- アンケートの操作（QR の確認・回答・お渡し済みにする）は、同じ IP アドレスから 10 秒に 30 回までにしています（`lib/rate-limit.ts`）。超えると「混み合っています」と出ます。
+  - IP アドレスは Cloudflare が付ける `CF-Connecting-IP` で見ます。会場の Wi-Fi や携帯の回線では大勢が同じ IP アドレスに見えるので、人には届かず、スクリプトだけが超える回数にしています。
+  - 新しいチケットの発行は止めません。同じ IP アドレスから 10 分に 30 枚を超えると、ログに `[survey]` で始まる警告を出します（`docker logs jev-insight-app` で見られます）。
+  - 数はメモリに置いているので、コンテナを入れ替えると数え直しになります。
 - 来場者証の QR の形式は確かめていません。どんな QR でもチケットが出るので、コーヒーを渡すときに実物の来場者証を確認してください。
 
 ## ロゴ
