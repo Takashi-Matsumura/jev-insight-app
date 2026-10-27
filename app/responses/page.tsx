@@ -7,7 +7,7 @@ import { StaffTabs } from "@/components/StaffTabs";
 import { SurveyAnswers } from "@/components/SurveyAnswers";
 import { SurveyQrButton } from "@/components/SurveyQrButton";
 import { getDb, schema } from "@/lib/db";
-import { allowReanswer, ticketNumber } from "@/lib/survey";
+import { allowReanswer, eventDayLabel, ticketNumber } from "@/lib/survey";
 import { displayCompany } from "@/lib/topics";
 
 // 来場者アンケートの回答一覧（担当者用）
@@ -25,6 +25,14 @@ export default async function ResponsesPage() {
   for (const s of sessions) if (!sessionByBadge.has(s.badgeCode)) sessionByBadge.set(s.badgeCode, s.id);
 
   const redeemedCount = responses.filter((r) => r.redeemedAt).length;
+  // 開催日ごとの件数（2 日目からは日ごとに分けて出す）
+  const byDay = new Map<string, { answered: number; redeemed: number }>();
+  for (const r of responses.toReversed()) {
+    const c = byDay.get(r.eventDay) ?? { answered: 0, redeemed: 0 };
+    c.answered++;
+    if (r.redeemedAt) c.redeemed++;
+    byDay.set(r.eventDay, c);
+  }
 
   return (
     <main className="mx-auto w-full max-w-2xl p-4">
@@ -42,13 +50,19 @@ export default async function ResponsesPage() {
 
       {allowReanswer() && (
         <p role="status" className="mb-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-100">
-          テストモード中です。同じ来場者証で何度でも答え直せます（前の回答とチケットは消えます）。当日までに
+          テストモード中です。同じ来場者証で何度でも答え直せます（その日の前の回答とチケットは消えます）。当日までに
           <code className="mx-1">SURVEY_ALLOW_REANSWER</code>を外してください。
         </p>
       )}
 
       <p className="mb-3 text-sm text-zinc-500">
         回答 {responses.length} 件 / コーヒーお渡し済み {redeemedCount} 件
+        {byDay.size > 1 &&
+          [...byDay].map(([day, c]) => (
+            <span key={day} className="block">
+              {eventDayLabel(day)}：回答 {c.answered} 件 / お渡し済み {c.redeemed} 件
+            </span>
+          ))}
       </p>
 
       <ul className="flex flex-col gap-2">
@@ -70,7 +84,7 @@ export default async function ResponsesPage() {
                     )}
                   </span>
                   <span className="shrink-0 text-xs text-zinc-400">
-                    {r.createdAt.toLocaleTimeString("ja-JP", { timeZone: "Asia/Tokyo", hour: "2-digit", minute: "2-digit" })}
+                    {r.createdAt.toLocaleString("ja-JP", { timeZone: "Asia/Tokyo", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                   </span>
                   <ChevronDown className="size-4 shrink-0 text-zinc-400 transition-transform group-open:rotate-180" aria-hidden />
                 </summary>

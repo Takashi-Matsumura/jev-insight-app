@@ -43,6 +43,13 @@
       "when": 1790852287934,
       "tag": "0005_simple_martin_li",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1793088354273,
+      "tag": "0006_survey_per_day",
+      "breakpoints": true
     }
   ]
 }

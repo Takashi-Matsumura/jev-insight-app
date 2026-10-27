@@ -4,7 +4,7 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { getDb, schema } from "@/lib/db";
-import { ALREADY_ANSWERED_PARAM, CAFE_LOGO, ticketNumber } from "@/lib/survey";
+import { ALREADY_ANSWERED_PARAM, CAFE_LOGO, eventDay, eventDayLabel, ticketNumber } from "@/lib/survey";
 import { TicketActions } from "./TicketActions";
 
 const TOKEN_PATTERN = /^[0-9a-f-]{36}$/;
@@ -16,12 +16,18 @@ export default async function TicketPage(props: PageProps<"/survey/ticket/[token
   const alreadyAnswered = (await props.searchParams)[ALREADY_ANSWERED_PARAM] === "1";
   if (!TOKEN_PATTERN.test(token)) notFound();
   const [ticket] = await getDb()
-    .select({ id: schema.surveyResponses.id, redeemedAt: schema.surveyResponses.redeemedAt })
+    .select({
+      id: schema.surveyResponses.id,
+      eventDay: schema.surveyResponses.eventDay,
+      redeemedAt: schema.surveyResponses.redeemedAt,
+    })
     .from(schema.surveyResponses)
     .where(eq(schema.surveyResponses.token, token));
   if (!ticket) notFound();
 
   const redeemed = ticket.redeemedAt !== null;
+  // チケットは回答した日だけ使える。前の日の使っていないチケットは、期限切れとして出す
+  const expired = !redeemed && ticket.eventDay !== eventDay();
 
   return (
     <main className="mx-auto flex w-full max-w-lg flex-col gap-6 p-4 pb-6">
@@ -42,10 +48,11 @@ export default async function TicketPage(props: PageProps<"/survey/ticket/[token
           <h1 className="text-xl font-bold tracking-wide">コーヒー引換チケット</h1>
         </div>
 
-        <div className={`flex flex-col items-center gap-3 px-5 py-6 ${redeemed ? "opacity-50" : ""}`}>
+        <div className={`flex flex-col items-center gap-3 px-5 py-6 ${redeemed || expired ? "opacity-50" : ""}`}>
           <Image {...CAFE_LOGO} alt="OCCカフェ" unoptimized className="h-auto w-24" />
           <p className="text-xs font-semibold tracking-widest text-roast/70">引換番号</p>
           <p className="font-slab text-6xl tracking-wider text-espresso">No.{ticketNumber(ticket.id)}</p>
+          <p className="text-sm font-semibold text-roast/80">{eventDayLabel(ticket.eventDay)} 当日限り</p>
         </div>
 
         <div aria-hidden className="relative mx-5 border-t-2 border-dashed border-roast/25">
@@ -67,9 +74,16 @@ export default async function TicketPage(props: PageProps<"/survey/ticket/[token
             </p>
           </div>
         )}
+        {expired && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <p className="-rotate-12 rounded-xl border-4 border-roast/60 bg-paper/85 px-5 py-2 text-2xl font-bold text-roast/80 shadow-sm">
+              期限切れ
+            </p>
+          </div>
+        )}
       </section>
 
-      <TicketActions token={token} redeemed={redeemed} />
+      <TicketActions token={token} day={ticket.eventDay} redeemed={redeemed} expired={expired} />
     </main>
   );
 }

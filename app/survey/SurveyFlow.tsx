@@ -6,13 +6,15 @@ import { useActionState, useState, useSyncExternalStore, useTransition } from "r
 import { QrIcon } from "@/components/QrIcon";
 import { QrScanner } from "@/components/QrScanner";
 import { checkBadgeCode } from "@/lib/badge";
-import { CONSENT_TEXT, QUESTIONS, TICKET_STORAGE_KEY, type Question } from "@/lib/survey";
+import { CONSENT_TEXT, eventDay, QUESTIONS, TICKET_STORAGE_KEY, type Question } from "@/lib/survey";
 import { findTicket, submitSurvey, type SurveyState } from "./actions";
 
 const noopSubscribe = () => () => {};
+// 今日のチケットの token。「開催日 token」の形で覚えているので、前の日のものは出さない
 function readTicket() {
   try {
-    return localStorage.getItem(TICKET_STORAGE_KEY);
+    const [day, token] = localStorage.getItem(TICKET_STORAGE_KEY)?.split(" ") ?? [];
+    return day === eventDay() && token ? token : null;
   } catch {
     return null;
   }
