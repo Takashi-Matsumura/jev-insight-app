@@ -21,7 +21,17 @@ function readTicket() {
 // コーヒーのコースターのような丸いボタン。内側の点線はゴールド
 const CIRCLE_BUTTON =
   "relative flex aspect-square w-60 flex-col items-center justify-center gap-3 rounded-full p-6 text-center shadow-xl transition-transform active:scale-95";
-const CIRCLE_DASH = <span aria-hidden className="absolute inset-3 rounded-full border-2 border-dashed border-gold/70" />;
+// 押してほしいときは、点線を鼓動のように脈打たせる（動きを減らす設定の端末では止める）
+function CircleDash({ beat }: { beat: boolean }) {
+  return (
+    <span
+      aria-hidden
+      className={`absolute inset-3 rounded-full border-2 border-dashed border-gold/70 ${
+        beat ? "motion-safe:animate-[heartbeat_1.4s_ease-in-out_infinite] motion-safe:border-gold" : ""
+      }`}
+    />
+  );
+}
 
 // 来場者証の QR を読んでから、設問に進む（QR が読めないと回答できない）
 export function SurveyFlow() {
@@ -58,7 +68,7 @@ export function SurveyFlow() {
       <section className="flex flex-col items-center gap-3">
         {showSavedTicket ? (
           <Link href={`/survey/ticket/${savedTicket}`} className={`${CIRCLE_BUTTON} bg-espresso text-crema shadow-roast/30`}>
-            {CIRCLE_DASH}
+            <CircleDash beat />
             <Ticket className="size-20 text-gold" strokeWidth={1.5} aria-hidden />
             <span className="font-semibold leading-snug">
               コーヒー引換
@@ -76,7 +86,7 @@ export function SurveyFlow() {
               badgeCode ? "bg-paper text-roast shadow-roast/15 ring-4 ring-occ" : "bg-espresso text-crema shadow-roast/30"
             }`}
           >
-            {CIRCLE_DASH}
+            <CircleDash beat={!badgeCode && !checking} />
             {badgeCode ? (
               <>
                 <CircleCheck className="size-16 text-occ" strokeWidth={1.5} aria-hidden />
