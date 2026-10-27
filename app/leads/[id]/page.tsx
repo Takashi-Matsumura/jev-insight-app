@@ -8,6 +8,7 @@ import { RegenerateButton } from "@/components/RegenerateButton";
 import { SurveyAnswers } from "@/components/SurveyAnswers";
 import { getDb, schema } from "@/lib/db";
 import { getSession, listUtterances } from "@/lib/pipeline";
+import { eventDayLabel } from "@/lib/survey";
 import { displayCompany } from "@/lib/topics";
 
 // ブース担当者向けのリード詳細（商談見込み・次のアクションなど）。来場者には見せない
@@ -17,9 +18,13 @@ export default async function LeadPage(props: PageProps<"/leads/[id]">) {
   const session = await getSession(id);
   if (!session) notFound();
   const items = await listUtterances(id);
-  // 同じ来場者証でアンケートに答えていれば、その回答も見せる
-  const [survey] = session.badgeCode
-    ? await getDb().select().from(schema.surveyResponses).where(eq(schema.surveyResponses.badgeCode, session.badgeCode))
+  // 同じ来場者証でアンケートに答えていれば、その回答も見せる（開催日ごとに 1 件ずつある）
+  const surveys = session.badgeCode
+    ? await getDb()
+        .select()
+        .from(schema.surveyResponses)
+        .where(eq(schema.surveyResponses.badgeCode, session.badgeCode))
+        .orderBy(schema.surveyResponses.eventDay)
     : [];
 
   return (
@@ -77,17 +82,20 @@ export default async function LeadPage(props: PageProps<"/leads/[id]">) {
           </section>
         )}
 
-        {survey && (
-          <section>
+        {surveys.map((survey) => (
+          <section key={survey.id}>
             <div className="mb-2 flex items-center justify-between">
-              <h2 className="font-semibold">アンケートの回答</h2>
+              <h2 className="font-semibold">
+                アンケートの回答
+                {surveys.length > 1 && <span className="ml-2 text-sm font-normal text-zinc-500">{eventDayLabel(survey.eventDay)}</span>}
+              </h2>
               <NavLink href={`/responses#r-${survey.id}`} forward>
                 回答一覧で見る
               </NavLink>
             </div>
             <SurveyAnswers answers={survey.answers} />
           </section>
-        )}
+        ))}
       </div>
     </main>
   );

@@ -1,9 +1,10 @@
 "use client";
 
 import { Clock } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore, useTransition } from "react";
-import { TICKET_STORAGE_KEY } from "@/lib/survey";
+import { eventDayLabel, TICKET_STORAGE_KEY } from "@/lib/survey";
 import { redeemTicket } from "../../actions";
 
 const HOLD_MS = 1500;
@@ -16,7 +17,9 @@ function readClock() {
   return new Date().toLocaleTimeString("ja-JP", { timeZone: "Asia/Tokyo" });
 }
 
-export function TicketActions({ token, redeemed }: { token: string; redeemed: boolean }) {
+type Props = { token: string; day: string; redeemed: boolean; expired: boolean };
+
+export function TicketActions({ token, day, redeemed, expired }: Props) {
   const router = useRouter();
   // 動く時計を出して、スクリーンショットではないことが分かるようにする
   const now = useSyncExternalStore(subscribeClock, readClock, () => "");
@@ -28,12 +31,14 @@ export function TicketActions({ token, redeemed }: { token: string; redeemed: bo
 
   useEffect(() => {
     // アンケートを開き直したときに、このチケットへ戻れるようにする。
-    // お渡し済みになったら忘れる（スタッフのスマホを貸したとき、次の来場者に前の人の「回答済み」を出さない）
+    // お渡し済みになったら忘れる（スタッフのスマホを貸したとき、次の来場者に前の人の「回答済み」を出さない）。
+    // 期限切れも忘れる（次の日はアンケートに答え直してもらう）
+    const saved = `${day} ${token}`;
     try {
-      if (!redeemed) localStorage.setItem(TICKET_STORAGE_KEY, token);
-      else if (localStorage.getItem(TICKET_STORAGE_KEY) === token) localStorage.removeItem(TICKET_STORAGE_KEY);
+      if (!redeemed && !expired) localStorage.setItem(TICKET_STORAGE_KEY, saved);
+      else if (localStorage.getItem(TICKET_STORAGE_KEY) === saved) localStorage.removeItem(TICKET_STORAGE_KEY);
     } catch {}
-  }, [token, redeemed]);
+  }, [token, day, redeemed, expired]);
 
   useEffect(() => {
     // 画面を表に戻したときに、お渡し済みかどうかを取り直す
@@ -82,6 +87,17 @@ export function TicketActions({ token, redeemed }: { token: string; redeemed: bo
 
       {redeemed ? (
         <p className="text-center text-sm text-roast/80">このチケットは使用済みです。ありがとうございました。</p>
+      ) : expired ? (
+        <div className="flex flex-col items-center gap-4 text-center">
+          <p className="text-balance leading-relaxed">
+            このチケットは{eventDayLabel(day)}のものです。
+            <br />
+            本日もアンケートにお答えいただくと、新しいチケットをお渡しします。
+          </p>
+          <Link href="/survey" className="rounded-full bg-occ px-8 py-3 font-bold text-white shadow-lg shadow-occ/30">
+            本日のアンケートに答える
+          </Link>
+        </div>
       ) : (
         <>
           <p className="text-balance text-center leading-relaxed">

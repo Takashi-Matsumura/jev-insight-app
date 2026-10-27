@@ -76,11 +76,22 @@ export const CAFE_LOGO = { src: "/survey/occ-cafe-logo.svg", width: 283, height:
 // 回答済みの来場者証を読み直したときに、チケットの URL に付ける印（チケットの画面で「回答済みです」と出す）
 export const ALREADY_ANSWERED_PARAM = "answered";
 
-// 回答済みの端末がチケットに戻れるよう、チケットの token を localStorage に覚えておくキー
+// 回答済みの端末がチケットに戻れるよう、「開催日 token」を localStorage に覚えておくキー
 export const TICKET_STORAGE_KEY = "survey.ticket";
 
-// 社内テスト用: 1 にすると、同じ来場者証で何度でも答え直せる（前の回答とチケットは消える）。
-// 当日は設定しない（既定は来場者証 1 枚につきチケット 1 枚）
+// 開催日（日本時間の YYYY-MM-DD）。展示会は複数日あり、来場者証 1 枚につき 1 日 1 回答える（チケットも 1 日 1 枚）
+export function eventDay(at = new Date()) {
+  return at.toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
+}
+
+// 「10/28（水）」の形にする
+export function eventDayLabel(day: string) {
+  const d = new Date(`${day}T00:00:00+09:00`);
+  return d.toLocaleDateString("ja-JP", { timeZone: "Asia/Tokyo", month: "numeric", day: "numeric", weekday: "short" }).replace(/\((.)\)/, "（$1）");
+}
+
+// 社内テスト用: 1 にすると、同じ来場者証で何度でも答え直せる（その日の前の回答とチケットは消える）。
+// 当日は設定しない（既定は来場者証 1 枚につき 1 日 1 枚）
 export function allowReanswer() {
   return process.env.SURVEY_ALLOW_REANSWER === "1";
 }

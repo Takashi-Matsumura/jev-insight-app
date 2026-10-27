@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { index, integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { index, integer, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 import type { Summary, VisitorReport } from "../gemma-schema";
 import type { SurveyAnswers } from "../survey";
 
@@ -51,13 +51,15 @@ export const utterances = sqliteTable("utterances", {
   createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
 }, (t) => [index("utterances_session_id_idx").on(t.sessionId)]);
 
-// 来場者が自分のスマホで答えるアンケート。来場者証 1 枚につき 1 行で、コーヒー引換チケットを兼ねる
+// 来場者が自分のスマホで答えるアンケート。来場者証 1 枚・開催日 1 日につき 1 行で、コーヒー引換チケットを兼ねる
 export const surveyResponses = sqliteTable("survey_responses", {
   // チケット番号として画面に出す
   id: integer("id").primaryKey({ autoIncrement: true }),
   // チケット画面の URL に使う、推測できない値
   token: text("token").notNull().unique(),
-  badgeCode: text("badge_code").notNull().unique(),
+  badgeCode: text("badge_code").notNull(),
+  // 回答した日（日本時間の YYYY-MM-DD）。チケットはこの日だけ使える
+  eventDay: text("event_day").notNull(),
   company: text("company").notNull().default(""),
   visitorName: text("visitor_name").notNull().default(""),
   answers: text("answers", { mode: "json" }).$type<SurveyAnswers>().notNull(),
@@ -65,7 +67,7 @@ export const surveyResponses = sqliteTable("survey_responses", {
   createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
   // コーヒーを渡した時刻。未使用なら null
   redeemedAt: integer("redeemed_at", { mode: "timestamp" }),
-});
+}, (t) => [uniqueIndex("survey_responses_badge_code_event_day_unique").on(t.badgeCode, t.eventDay)]);
 
 export type Session = typeof sessions.$inferSelect;
 export type Utterance = typeof utterances.$inferSelect;
