@@ -132,7 +132,9 @@ export function SurveyFlow() {
             <p className="text-balance text-center text-sm leading-relaxed text-roast/80">
               はじめに、お持ちの来場者証のQRコードを読み取ってください。
               <br />
-              読み取れないときは、ブースのスタッフにお声がけください。
+              {/* 1 行に収まらない幅では、読点で折り返す（「い。」だけが次の行に残らないように） */}
+              <span className="inline-block">読み取れないときは、</span>
+              <span className="inline-block">スタッフにお声がけください。</span>
             </p>
           ))}
       </section>

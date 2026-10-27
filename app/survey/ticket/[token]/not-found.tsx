@@ -25,7 +25,7 @@ export default function TicketNotFound() {
       <p className="text-balance text-sm leading-relaxed text-roast/80">
         お手数ですが、もう一度アンケートにお答えください。
         <br />
-        ご不明な点は、ブースのスタッフにお声がけください。
+        ご不明な点は、スタッフにお声がけください。
       </p>
       <Link href="/survey" className="mt-2 font-semibold text-occ underline underline-offset-4">
         アンケートに戻る
