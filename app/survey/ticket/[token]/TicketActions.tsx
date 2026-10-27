@@ -81,7 +81,7 @@ export function TicketActions({ token, redeemed }: { token: string; redeemed: bo
       </p>
 
       {redeemed ? (
-        <p className="text-center text-sm text-roast/80">このチケットは使用済みです。ご来場ありがとうございました。</p>
+        <p className="text-center text-sm text-roast/80">このチケットは使用済みです。ありがとうございました。</p>
       ) : (
         <>
           <p className="text-balance text-center leading-relaxed">
