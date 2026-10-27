@@ -7,7 +7,7 @@ export const sessions = sqliteTable("sessions", {
   id: text("id").primaryKey(),
   company: text("company").notNull(),
   visitorName: text("visitor_name").notNull().default(""),
-  // 来場者バッジのQRコードの中身（主催者の来場者データと突き合わせるためのキー）
+  // 来場者証のQRコードの中身（主催者の来場者データと突き合わせるためのキー）
   badgeCode: text("badge_code").notNull().default(""),
   department: text("department").notNull().default(""),
   position: text("position").notNull().default(""),
@@ -51,7 +51,7 @@ export const utterances = sqliteTable("utterances", {
   createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
 }, (t) => [index("utterances_session_id_idx").on(t.sessionId)]);
 
-// 来場者が自分のスマホで答えるアンケート。1 バッジにつき 1 行で、コーヒー引換チケットを兼ねる
+// 来場者が自分のスマホで答えるアンケート。来場者証 1 枚につき 1 行で、コーヒー引換チケットを兼ねる
 export const surveyResponses = sqliteTable("survey_responses", {
   // チケット番号として画面に出す
   id: integer("id").primaryKey({ autoIncrement: true }),

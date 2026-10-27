@@ -18,7 +18,7 @@ function readTicket() {
   }
 }
 
-// 来場者バッジの QR を読んでから、設問に進む（QR が読めないと回答できない）
+// 来場者証の QR を読んでから、設問に進む（QR が読めないと回答できない）
 export function SurveyFlow() {
   const [state, action, pending] = useActionState<SurveyState, FormData>(submitSurvey, {});
   const [scanning, setScanning] = useState(false);
@@ -40,7 +40,7 @@ export function SurveyFlow() {
     }
     setScanError(null);
     startCheck(async () => {
-      // 回答済みのバッジなら、ここでチケット画面へ移動する
+      // 回答済みの来場者証なら、ここでチケット画面へ移動する
       const result = await findTicket(badge.code);
       if (result.error) setScanError(result.error);
       else setBadgeCode(badge.code);
@@ -68,7 +68,7 @@ export function SurveyFlow() {
           type="button"
           onClick={() => setScanning(true)}
           disabled={checking}
-          aria-label={badgeCode ? "QRコードを読み直す" : "来場者バッジのQRを読み取る"}
+          aria-label={badgeCode ? "QRコードを読み直す" : "来場者証のQRを読み取る"}
           // コーヒーのコースターのような丸いボタン。内側の点線はゴールド
           className={`relative flex aspect-square w-60 flex-col items-center justify-center gap-3 rounded-full p-6 text-center shadow-xl transition-transform active:scale-95 disabled:opacity-60 ${
             badgeCode ? "bg-paper text-roast shadow-roast/15 ring-4 ring-occ" : "bg-espresso text-crema shadow-roast/30"
@@ -92,7 +92,7 @@ export function SurveyFlow() {
                   "確認中…"
                 ) : (
                   <>
-                    来場者バッジの
+                    来場者証の
                     <br />
                     QRを読み取る
                   </>
@@ -108,7 +108,7 @@ export function SurveyFlow() {
         )}
         {!badgeCode && (
           <p className="text-balance text-center text-sm leading-relaxed text-roast/80">
-            はじめに、お持ちの来場者バッジのQRコードを読み取ってください。
+            はじめに、お持ちの来場者証のQRコードを読み取ってください。
             <br />
             読み取れないときは、ブースのスタッフにお声がけください。
           </p>
@@ -163,7 +163,7 @@ export function SurveyFlow() {
         <QrScanner
           onDetect={handleDetect}
           onClose={() => setScanning(false)}
-          hint="お持ちの来場者バッジのQRコードを枠に合わせてください"
+          hint="お持ちの来場者証のQRコードを枠に合わせてください"
         />
       )}
     </div>

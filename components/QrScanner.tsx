@@ -7,7 +7,7 @@ import { useEffect, useEffectEvent, useRef, useState } from "react";
 // 解析する映像の幅の上限。小さく写った QR や情報量の多い QR を読むため、縮小しすぎない
 const MAX_SCAN_WIDTH = 1280;
 
-// QR の中身を文字列にする。日本の名刺やバッジには Shift_JIS のものがあり、
+// QR の中身を文字列にする。日本の名刺や来場者証には Shift_JIS のものがあり、
 // jsQR は UTF-8 として読めないと data を空にするので、そのときはバイト列から読み直す
 function qrText(code: { data: string; binaryData: number[] }) {
   if (code.data || code.binaryData.length === 0) return code.data;
@@ -24,7 +24,7 @@ function qrText(code: { data: string; binaryData: number[] }) {
 export function QrScanner({
   onDetect,
   onClose,
-  hint = "来場者バッジのQRコードを枠に合わせてください",
+  hint = "来場者証のQRコードを枠に合わせてください",
 }: {
   onDetect: (value: string) => void;
   onClose: () => void;

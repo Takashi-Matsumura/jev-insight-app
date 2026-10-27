@@ -21,7 +21,7 @@ async function checkBadge(raw: unknown) {
   return checkBadgeCode(typeof raw === "string" ? raw : "", host);
 }
 
-// 回答済みのバッジのチケットへの URL。チケットの画面に「回答済みです」と出すための印を付ける
+// 回答済みの来場者証のチケットへの URL。チケットの画面に「回答済みです」と出すための印を付ける
 async function answeredTicketPath(badgeCode: string) {
   const [row] = await getDb()
     .select({ token: surveyResponses.token })
@@ -30,7 +30,7 @@ async function answeredTicketPath(badgeCode: string) {
   return row ? `/survey/ticket/${row.token}?${ALREADY_ANSWERED_PARAM}=1` : null;
 }
 
-// QR を読んだ直後に呼ぶ。回答済みのバッジなら、設問を出さずにチケットへ進める
+// QR を読んだ直後に呼ぶ。回答済みの来場者証なら、設問を出さずにチケットへ進める
 export async function findTicket(badgeCode: string): Promise<SurveyState> {
   const badge = await checkBadge(badgeCode);
   if (!badge.ok) return { error: badge.error };
@@ -50,7 +50,7 @@ export async function submitSurvey(_prev: SurveyState, formData: FormData): Prom
   const { company, name } = parseBadge(badge.code);
   // テストモードでは前の回答を消してから入れ直す（badge_code は一意なので、残したままでは入らない）
   if (allowReanswer()) await getDb().delete(surveyResponses).where(eq(surveyResponses.badgeCode, badge.code));
-  // 1 バッジ 1 枚。同じバッジで送り直された場合は、最初の回答とチケットをそのまま使う
+  // 来場者証 1 枚につきチケット 1 枚。同じ来場者証で送り直された場合は、最初の回答とチケットをそのまま使う
   const [created] = await getDb()
     .insert(surveyResponses)
     .values({

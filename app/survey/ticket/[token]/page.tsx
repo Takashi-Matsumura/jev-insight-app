@@ -26,9 +26,9 @@ export default async function TicketPage(props: PageProps<"/survey/ticket/[token
   return (
     <main className="mx-auto flex w-full max-w-lg flex-col gap-6 p-4 pb-6">
       {alreadyAnswered ? (
-        // 回答済みのバッジを読み直したときは、今答えたのではないと分かるようにする
+        // 回答済みの来場者証を読み直したときは、今答えたのではないと分かるようにする
         <p role="status" className="mt-4 text-balance text-center text-sm text-roast">
-          <span className="block font-semibold">このバッジは回答済みです</span>
+          <span className="block font-semibold">この来場者証は回答済みです</span>
           <span className="block text-roast/80">最初にお答えいただいたときのチケットを表示しています</span>
         </p>
       ) : (
