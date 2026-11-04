@@ -68,7 +68,7 @@ export const surveyResponses = sqliteTable("survey_responses", {
   // コーヒーを渡した時刻。未使用なら null
   redeemedAt: integer("redeemed_at", { mode: "timestamp" }),
   // 共通の VIP カードで受け取った、アンケートなしのチケット（lib/vip.ts）。
-  // badgeCode は「vip:」で始まる発行ごとの値、answers は空、consentAt は発行した時刻を入れる
+  // badgeCode は「vip:<端末>:<発行ごとの値>」（端末ごとの 1 日の枚数を数える）、answers は空、consentAt は発行した時刻を入れる
   vip: integer("vip", { mode: "boolean" }).notNull().default(false),
 }, (t) => [uniqueIndex("survey_responses_badge_code_event_day_unique").on(t.badgeCode, t.eventDay)]);
 
