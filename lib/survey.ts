@@ -96,6 +96,18 @@ export function allowReanswer() {
   return process.env.SURVEY_ALLOW_REANSWER === "1";
 }
 
+// チケットの token（crypto.randomUUID() の値）
+export const TICKET_TOKEN_PATTERN = /^[0-9a-f-]{36}$/;
+
+// 読み取った QR がこのアプリのチケットの URL（VIP 用 QR など）なら、そのパスを返す
+export function ticketPathFromQr(raw: string, selfHost: string): string | null {
+  const text = raw.trim();
+  if (!URL.canParse(text)) return null;
+  const url = new URL(text);
+  const token = url.pathname.match(/^\/survey\/ticket\/([^/]+)$/)?.[1];
+  return url.host === selfHost && token && TICKET_TOKEN_PATTERN.test(token) ? `/survey/ticket/${token}` : null;
+}
+
 export function ticketNumber(id: number) {
   return String(id).padStart(3, "0");
 }

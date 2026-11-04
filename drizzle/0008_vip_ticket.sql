@@ -1,0 +1,1 @@
+ALTER TABLE `survey_responses` ADD `vip` integer DEFAULT false NOT NULL;

@@ -1,25 +1,24 @@
 import { eq } from "drizzle-orm";
-import { CircleCheck } from "lucide-react";
+import { CircleCheck, Crown } from "lucide-react";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { getDb, schema } from "@/lib/db";
-import { ALREADY_ANSWERED_PARAM, CAFE_LOGO, eventDay, eventDayLabel, ticketNumber } from "@/lib/survey";
+import { ALREADY_ANSWERED_PARAM, CAFE_LOGO, eventDay, eventDayLabel, TICKET_TOKEN_PATTERN, ticketNumber } from "@/lib/survey";
 import { TicketActions } from "./TicketActions";
-
-const TOKEN_PATTERN = /^[0-9a-f-]{36}$/;
 
 // コーヒー引換チケット。URL を知っていれば誰でも開けるので、氏名や回答は出さない
 export default async function TicketPage(props: PageProps<"/survey/ticket/[token]">) {
   await connection();
   const { token } = await props.params;
   const alreadyAnswered = (await props.searchParams)[ALREADY_ANSWERED_PARAM] === "1";
-  if (!TOKEN_PATTERN.test(token)) notFound();
+  if (!TICKET_TOKEN_PATTERN.test(token)) notFound();
   const [ticket] = await getDb()
     .select({
       id: schema.surveyResponses.id,
       eventDay: schema.surveyResponses.eventDay,
       redeemedAt: schema.surveyResponses.redeemedAt,
+      vip: schema.surveyResponses.vip,
     })
     .from(schema.surveyResponses)
     .where(eq(schema.surveyResponses.token, token));
@@ -31,7 +30,10 @@ export default async function TicketPage(props: PageProps<"/survey/ticket/[token
 
   return (
     <main className="mx-auto flex w-full max-w-lg flex-col gap-6 p-4 pb-6">
-      {alreadyAnswered ? (
+      {ticket.vip ? (
+        // 担当者が VIP 用 QR で発行したチケット（アンケートには答えていない）
+        <p className="mt-4 text-center text-sm font-semibold text-roast">ご来場ありがとうございます</p>
+      ) : alreadyAnswered ? (
         // 回答済みの来場者証を読み直したときは、今答えたのではないと分かるようにする
         <p role="status" className="mt-4 text-balance text-center text-sm text-roast">
           <span className="block font-semibold">この来場者証は回答済みです</span>
@@ -42,9 +44,16 @@ export default async function TicketPage(props: PageProps<"/survey/ticket/[token
       )}
 
       {/* 紙のチケットに見立てる。左右の切り欠きは背景と同じ色の丸 */}
-      <section className="relative overflow-hidden rounded-2xl bg-paper text-center shadow-xl shadow-roast/20 ring-1 ring-roast/10">
+      <section className={`relative overflow-hidden rounded-2xl bg-paper text-center shadow-xl shadow-roast/20 ${ticket.vip ? "ring-4 ring-gold" : "ring-1 ring-roast/10"}`}>
         <div className="flex flex-col items-center gap-0.5 bg-espresso px-5 py-4 text-crema">
-          <span className="font-slab text-xs tracking-[0.3em] text-gold">COFFEE TICKET</span>
+          {ticket.vip ? (
+            <span className="flex items-center gap-1.5 font-slab text-xs tracking-[0.3em] text-gold">
+              <Crown className="size-4" aria-hidden />
+              VIP · COFFEE TICKET
+            </span>
+          ) : (
+            <span className="font-slab text-xs tracking-[0.3em] text-gold">COFFEE TICKET</span>
+          )}
           <h1 className="text-xl font-bold tracking-wide">コーヒー引換チケット</h1>
         </div>
 

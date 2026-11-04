@@ -1,8 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Alfa_Slab_One } from "next/font/google";
-
-// ロゴの「COFFEE & SOLUTION」に合わせた、英字の飾り用の書体
-const alfaSlab = Alfa_Slab_One({ weight: "400", subsets: ["latin"], variable: "--font-alfa-slab" });
+import { alfaSlab } from "@/lib/fonts";
 
 // 来場者が自分のスマホで開く画面。担当者用の画面とは題名を分ける
 export const metadata: Metadata = {

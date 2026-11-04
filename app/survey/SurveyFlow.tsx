@@ -2,11 +2,12 @@
 
 import { CircleCheck, Coffee, RefreshCw, Ticket } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useActionState, useState, useSyncExternalStore, useTransition } from "react";
 import { QrIcon } from "@/components/QrIcon";
 import { QrScanner } from "@/components/QrScanner";
 import { checkBadgeCode } from "@/lib/badge";
-import { CONSENT_TEXT, eventDay, QUESTIONS, TICKET_STORAGE_KEY, type Question } from "@/lib/survey";
+import { CONSENT_TEXT, eventDay, QUESTIONS, TICKET_STORAGE_KEY, ticketPathFromQr, type Question } from "@/lib/survey";
 import { findTicket, submitSurvey, type SurveyState } from "./actions";
 
 const noopSubscribe = () => () => {};
@@ -37,6 +38,7 @@ function CircleDash({ beat }: { beat: boolean }) {
 
 // 来場者証の QR を読んでから、設問に進む（QR が読めないと回答できない）
 export function SurveyFlow() {
+  const router = useRouter();
   const [state, action, pending] = useActionState<SurveyState, FormData>(submitSurvey, {});
   const [scanning, setScanning] = useState(false);
   const [badgeCode, setBadgeCode] = useState("");
@@ -50,6 +52,12 @@ export function SurveyFlow() {
 
   const handleDetect = (value: string) => {
     setScanning(false);
+    // 担当者の VIP 用 QR（チケットの URL）なら、アンケートなしでそのチケットを開く
+    const ticketPath = ticketPathFromQr(value, window.location.host);
+    if (ticketPath) {
+      router.push(ticketPath);
+      return;
+    }
     const badge = checkBadgeCode(value, window.location.host);
     if (!badge.ok) {
       setBadgeCode("");

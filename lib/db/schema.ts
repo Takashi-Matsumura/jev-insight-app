@@ -67,6 +67,9 @@ export const surveyResponses = sqliteTable("survey_responses", {
   createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
   // コーヒーを渡した時刻。未使用なら null
   redeemedAt: integer("redeemed_at", { mode: "timestamp" }),
+  // 担当者が VIP 用 QR で発行した、アンケートなしのチケット（lib/vip.ts）。
+  // badgeCode は「vip:」で始まる発行ごとの値、answers は空、consentAt は発行した時刻を入れる
+  vip: integer("vip", { mode: "boolean" }).notNull().default(false),
 }, (t) => [uniqueIndex("survey_responses_badge_code_event_day_unique").on(t.badgeCode, t.eventDay)]);
 
 // 1 分ごと・種類ごとのアクセス数と処理時間（lib/metrics.ts）。当日の負荷をあとから見るために使う
