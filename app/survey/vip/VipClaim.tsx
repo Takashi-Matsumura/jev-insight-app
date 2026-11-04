@@ -49,7 +49,12 @@ export function VipClaim({ cardKey }: { cardKey: string }) {
       </button>
       {error && (
         <p role="alert" className="text-center text-sm font-semibold text-rose-700">
-          {error}
+          {/* 文の途中で折り返さないよう、文ごとに区切る */}
+          {error.split(/(?<=。)/).map((sentence) => (
+            <span key={sentence} className="inline-block">
+              {sentence}
+            </span>
+          ))}
         </p>
       )}
     </div>

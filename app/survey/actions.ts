@@ -1,15 +1,15 @@
 "use server";
 
-import { and, eq, isNull } from "drizzle-orm";
+import { and, count, eq, isNull, like } from "drizzle-orm";
 import { refresh } from "next/cache";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { checkBadgeCode, parseBadge } from "@/lib/badge";
 import { getDb, schema } from "@/lib/db";
 import { measure } from "@/lib/metrics";
 import { allowSurveyAction, clientIp, recordNewTicket } from "@/lib/rate-limit";
-import { ALREADY_ANSWERED_PARAM, allowReanswer, eventDay, eventDayLabel, parseAnswers } from "@/lib/survey";
-import { checkVipKey } from "@/lib/vip";
+import { ALREADY_ANSWERED_PARAM, allowReanswer, eventDay, eventDayLabel, parseAnswers, TICKET_TOKEN_PATTERN } from "@/lib/survey";
+import { checkVipKey, VIP_DEVICE_COOKIE, VIP_DEVICE_MAX_AGE, VIP_TICKETS_PER_DAY } from "@/lib/vip";
 
 // /survey 配下は来場者に公開する（前段の認証を通さない）。
 // ここには来場者が実行してよい操作だけを置き、DB の行そのものは返さない。
@@ -90,8 +90,8 @@ async function runSubmitSurvey(formData: FormData): Promise<SurveyState> {
 }
 
 // 共通の VIP カードの QR から開いた画面で、来場者がボタンを押したときに呼ぶ。
-// アンケートなしで、押すたびに新しいチケットを 1 枚発行する（VIP カードは何度でも使える）。
-// 来場者証の代わりに発行ごとの値を入れるので、来場者証 1 枚につき 1 日 1 枚の制限はかからない
+// アンケートなしで、押すたびに新しいチケットを 1 枚発行する（同じ端末で 1 日 VIP_TICKETS_PER_DAY 枚まで）。
+// 来場者証の代わりに「vip:<端末>:<発行ごとの値>」を入れるので、来場者証 1 枚につき 1 日 1 枚の制限はかからない
 export async function claimVipTicket(key: string): Promise<SurveyState> {
   return measure("survey:vip", () => runClaimVipTicket(key));
 }
@@ -100,19 +100,47 @@ async function runClaimVipTicket(key: string): Promise<SurveyState> {
   const ip = await clientIp();
   if (!allowSurveyAction(ip)) return { error: BUSY };
   if (!checkVipKey(key)) return { error: "このVIPカードは使えません。スタッフにお声がけください。" };
+
+  const jar = await cookies();
+  const saved = jar.get(VIP_DEVICE_COOKIE)?.value;
+  const device = saved && TICKET_TOKEN_PATTERN.test(saved) ? saved : crypto.randomUUID();
+  // 使うたびに期限を延ばす（展示会の 2 日間は同じ端末として数える）
+  jar.set(VIP_DEVICE_COOKIE, device, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/survey",
+    maxAge: VIP_DEVICE_MAX_AGE,
+  });
+
+  const day = eventDay();
   const token = crypto.randomUUID();
-  await getDb()
-    .insert(surveyResponses)
-    .values({
-      token,
-      badgeCode: `vip:${crypto.randomUUID()}`,
-      eventDay: eventDay(),
-      company: "",
-      visitorName: "",
-      answers: {},
-      consentAt: new Date(),
-      vip: true,
-    });
+  // 数えてから入れるまでを 1 つのトランザクションにする（ボタンを連打されても枚数を超えないように）
+  const issued = getDb().transaction((tx) => {
+    const [{ n }] = tx
+      .select({ n: count() })
+      .from(surveyResponses)
+      .where(and(eq(surveyResponses.eventDay, day), like(surveyResponses.badgeCode, `vip:${device}:%`)))
+      .all();
+    if (n >= VIP_TICKETS_PER_DAY) return false;
+    tx.insert(surveyResponses)
+      .values({
+        token,
+        badgeCode: `vip:${device}:${crypto.randomUUID()}`,
+        eventDay: day,
+        company: "",
+        visitorName: "",
+        answers: {},
+        consentAt: new Date(),
+        vip: true,
+      })
+      .run();
+    return true;
+  });
+  if (!issued) {
+    return { error: `VIPカードのチケットは、1台につき1日${VIP_TICKETS_PER_DAY}枚までです。スタッフにお声がけください。` };
+  }
+
   recordNewTicket(ip);
   redirect(`/survey/ticket/${token}`);
 }

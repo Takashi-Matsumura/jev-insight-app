@@ -6,7 +6,7 @@ import { alfaSlab } from "@/lib/fonts";
 import { QR_MARGIN, qrModules } from "@/lib/qr";
 
 // 共通の VIP カードの QR を全画面で出す。来場者証を持たない方や特別なお客様に読み取ってもらうと、
-// アンケートなしでコーヒー引換チケットを受け取れる（何度でも使える）。印刷するときは、この画面を保存する
+// アンケートなしでコーヒー引換チケットを受け取れる（同じ端末で 1 日 5 枚まで）。印刷するときは、この画面を保存する
 // path: VIP カードのパス（lib/vip.ts）。VIP_CARD_KEY が未設定なら null
 export function VipCardButton({ path }: { path: string | null }) {
   const [url, setUrl] = useState<string | null>(null);
