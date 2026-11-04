@@ -1,11 +1,12 @@
 import { desc, ne } from "drizzle-orm";
-import { ChevronDown, CircleCheck, Download } from "lucide-react";
+import { ChevronDown, CircleCheck, Crown, Download } from "lucide-react";
 import { connection } from "next/server";
 import { LogoutTitle } from "@/components/LogoutTitle";
 import { NavLink } from "@/components/NavLink";
 import { StaffTabs } from "@/components/StaffTabs";
 import { SurveyAnswers } from "@/components/SurveyAnswers";
 import { SurveyQrButton } from "@/components/SurveyQrButton";
+import { VipQrButton } from "@/components/VipQrButton";
 import { getDb, schema } from "@/lib/db";
 import { allowReanswer, eventDayLabel, ticketNumber } from "@/lib/survey";
 import { displayCompany } from "@/lib/topics";
@@ -25,11 +26,14 @@ export default async function ResponsesPage() {
   for (const s of sessions) if (!sessionByBadge.has(s.badgeCode)) sessionByBadge.set(s.badgeCode, s.id);
 
   const redeemedCount = responses.filter((r) => r.redeemedAt).length;
+  // VIP 用 QR で発行したチケット（アンケートなし）。回答の件数とは分けて出す
+  const vipCount = responses.filter((r) => r.vip).length;
   // 開催日ごとの件数（2 日目からは日ごとに分けて出す）
-  const byDay = new Map<string, { answered: number; redeemed: number }>();
+  const byDay = new Map<string, { answered: number; vip: number; redeemed: number }>();
   for (const r of responses.toReversed()) {
-    const c = byDay.get(r.eventDay) ?? { answered: 0, redeemed: 0 };
-    c.answered++;
+    const c = byDay.get(r.eventDay) ?? { answered: 0, vip: 0, redeemed: 0 };
+    if (r.vip) c.vip++;
+    else c.answered++;
     if (r.redeemedAt) c.redeemed++;
     byDay.set(r.eventDay, c);
   }
@@ -47,6 +51,7 @@ export default async function ResponsesPage() {
       <StaffTabs current="survey" />
 
       <SurveyQrButton />
+      <VipQrButton />
 
       {allowReanswer() && (
         <p role="status" className="mb-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-100">
@@ -56,11 +61,11 @@ export default async function ResponsesPage() {
       )}
 
       <p className="mb-3 text-sm text-zinc-500">
-        回答 {responses.length} 件 / コーヒーお渡し済み {redeemedCount} 件
+        回答 {responses.length - vipCount} 件{vipCount > 0 && `・VIP ${vipCount} 件`} / コーヒーお渡し済み {redeemedCount} 件
         {byDay.size > 1 &&
           [...byDay].map(([day, c]) => (
             <span key={day} className="block">
-              {eventDayLabel(day)}：回答 {c.answered} 件 / お渡し済み {c.redeemed} 件
+              {eventDayLabel(day)}：回答 {c.answered} 件{c.vip > 0 && `・VIP ${c.vip} 件`} / お渡し済み {c.redeemed} 件
             </span>
           ))}
       </p>
@@ -80,8 +85,18 @@ export default async function ResponsesPage() {
                 <summary className="flex cursor-pointer list-none items-center gap-3 p-3 [&::-webkit-details-marker]:hidden">
                   <span className="w-12 shrink-0 text-center font-mono text-lg font-bold">{ticketNumber(r.id)}</span>
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate font-semibold">{displayCompany(r.company)}</span>
-                    <span className="block truncate text-sm text-zinc-500">{r.visitorName}</span>
+                    {r.vip ? (
+                      <span className="flex items-center gap-1 font-semibold text-amber-700 dark:text-amber-400">
+                        <Crown className="size-4" aria-hidden />
+                        VIP
+                        <span className="text-xs font-normal text-zinc-500">アンケートなし</span>
+                      </span>
+                    ) : (
+                      <>
+                        <span className="block truncate font-semibold">{displayCompany(r.company)}</span>
+                        <span className="block truncate text-sm text-zinc-500">{r.visitorName}</span>
+                      </>
+                    )}
                     {r.redeemedAt && (
                       <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">
                         <CircleCheck className="size-3.5" aria-hidden />
@@ -95,8 +110,14 @@ export default async function ResponsesPage() {
                   <ChevronDown className="size-4 shrink-0 text-zinc-400 transition-transform group-open:rotate-180" aria-hidden />
                 </summary>
                 <div className="flex flex-col gap-3 border-t border-zinc-200 p-3 dark:border-zinc-800">
-                  <SurveyAnswers answers={r.answers} />
-                  <p className="break-all font-mono text-xs text-zinc-400">QR: {r.badgeCode}</p>
+                  {r.vip ? (
+                    <p className="text-sm text-zinc-500">担当者が VIP 用 QR で発行したチケットです。アンケートの回答はありません。</p>
+                  ) : (
+                    <>
+                      <SurveyAnswers answers={r.answers} />
+                      <p className="break-all font-mono text-xs text-zinc-400">QR: {r.badgeCode}</p>
+                    </>
+                  )}
                   {sessionId && (
                     <NavLink href={`/leads/${sessionId}`} forward>
                       この来場者の課題メモ

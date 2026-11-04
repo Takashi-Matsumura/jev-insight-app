@@ -8,12 +8,14 @@ export async function GET() {
   const rows = await getDb().select().from(schema.surveyResponses).orderBy(desc(schema.surveyResponses.createdAt));
   const time = (d: Date | null) => d?.toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" }) ?? "";
 
-  const header = ["開催日", "日時", "チケット番号", "来場者QR", "会社", "氏名", ...QUESTIONS.map((q) => q.label), "コーヒーお渡し日時"];
+  const header = ["開催日", "日時", "チケット番号", "種別", "来場者QR", "会社", "氏名", ...QUESTIONS.map((q) => q.label), "コーヒーお渡し日時"];
   const lines = rows.map((r) => [
     eventDayLabel(r.eventDay),
     time(r.createdAt),
     ticketNumber(r.id),
-    r.badgeCode,
+    // VIP 用 QR で発行したチケットは、アンケートの回答が空になる
+    r.vip ? "VIP" : "アンケート",
+    r.vip ? "" : r.badgeCode,
     r.company,
     r.visitorName,
     ...QUESTIONS.map((q) => answerText(q, r.answers)),

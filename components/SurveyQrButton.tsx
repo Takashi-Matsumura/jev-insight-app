@@ -1,25 +1,8 @@
 "use client";
 
 import { QrCode, X } from "lucide-react";
-import qrcode from "qrcode-generator";
 import { useState } from "react";
-
-// QR のまわりに必要な余白（セル数）
-const MARGIN = 4;
-
-function qrModules(text: string) {
-  const qr = qrcode(0, "M");
-  qr.addData(text);
-  qr.make();
-  const size = qr.getModuleCount();
-  let path = "";
-  for (let row = 0; row < size; row++) {
-    for (let col = 0; col < size; col++) {
-      if (qr.isDark(row, col)) path += `M${col} ${row}h1v1h-1z`;
-    }
-  }
-  return { size, path };
-}
+import { QR_MARGIN as MARGIN, qrModules } from "@/lib/qr";
 
 // アンケートの入口（/survey）の QR を全画面で出す。担当者の端末を来場者に向けて読み取ってもらう
 // secondary: 画面にほかの主ボタンがあるときに、控えめな見た目で出す
