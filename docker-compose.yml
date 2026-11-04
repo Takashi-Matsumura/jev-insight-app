@@ -18,6 +18,8 @@ services:
       # 担当者用の操作で、Cloudflare Access のトークンを検証する（値は .env に書く。README を参照）
       - CF_ACCESS_TEAM_DOMAIN=${CF_ACCESS_TEAM_DOMAIN:-}
       - CF_ACCESS_AUD=${CF_ACCESS_AUD:-}
+      # 共通の VIP カードの合言葉（lib/vip.ts）。値は .env に書く。変えると前に刷ったカードは使えなくなる
+      - VIP_CARD_KEY=${VIP_CARD_KEY:-}
       # 社内テスト用。1 にすると同じ来場者バッジで答え直せる。当日は .env から外す
       - SURVEY_ALLOW_REANSWER=${SURVEY_ALLOW_REANSWER:-0}
       # Node の fetch に HTTP(S)_PROXY を使わせる（社内プロキシ配下で Jev に届くように）

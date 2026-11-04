@@ -7,7 +7,7 @@ import { useActionState, useState, useSyncExternalStore, useTransition } from "r
 import { QrIcon } from "@/components/QrIcon";
 import { QrScanner } from "@/components/QrScanner";
 import { checkBadgeCode } from "@/lib/badge";
-import { CONSENT_TEXT, eventDay, QUESTIONS, TICKET_STORAGE_KEY, ticketPathFromQr, type Question } from "@/lib/survey";
+import { CONSENT_TEXT, eventDay, QUESTIONS, TICKET_STORAGE_KEY, appPathFromQr, type Question } from "@/lib/survey";
 import { findTicket, submitSurvey, type SurveyState } from "./actions";
 
 const noopSubscribe = () => () => {};
@@ -52,10 +52,10 @@ export function SurveyFlow() {
 
   const handleDetect = (value: string) => {
     setScanning(false);
-    // 担当者の VIP 用 QR（チケットの URL）なら、アンケートなしでそのチケットを開く
-    const ticketPath = ticketPathFromQr(value, window.location.host);
-    if (ticketPath) {
-      router.push(ticketPath);
+    // VIP カードやチケットの QR なら、アンケートなしでその画面を開く
+    const appPath = appPathFromQr(value, window.location.host);
+    if (appPath) {
+      router.push(appPath);
       return;
     }
     const badge = checkBadgeCode(value, window.location.host);

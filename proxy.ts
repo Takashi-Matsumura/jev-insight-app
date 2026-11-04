@@ -8,7 +8,7 @@ export function proxy(req: NextRequest) {
   const path = req.nextUrl.pathname;
   const group = path.startsWith("/survey/ticket/")
     ? "ticket"
-    : path === "/survey"
+    : path === "/survey" || path === "/survey/vip"
       ? "survey"
       : /^\/api\/sessions\/[^/]+\/chunks$/.test(path)
         ? "chunks"

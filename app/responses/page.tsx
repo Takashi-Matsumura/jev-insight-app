@@ -6,10 +6,11 @@ import { NavLink } from "@/components/NavLink";
 import { StaffTabs } from "@/components/StaffTabs";
 import { SurveyAnswers } from "@/components/SurveyAnswers";
 import { SurveyQrButton } from "@/components/SurveyQrButton";
-import { VipQrButton } from "@/components/VipQrButton";
+import { VipCardButton } from "@/components/VipCardButton";
 import { getDb, schema } from "@/lib/db";
 import { allowReanswer, eventDayLabel, ticketNumber } from "@/lib/survey";
 import { displayCompany } from "@/lib/topics";
+import { vipCardPath } from "@/lib/vip";
 
 // 来場者アンケートの回答一覧（担当者用）
 export default async function ResponsesPage() {
@@ -26,7 +27,7 @@ export default async function ResponsesPage() {
   for (const s of sessions) if (!sessionByBadge.has(s.badgeCode)) sessionByBadge.set(s.badgeCode, s.id);
 
   const redeemedCount = responses.filter((r) => r.redeemedAt).length;
-  // VIP 用 QR で発行したチケット（アンケートなし）。回答の件数とは分けて出す
+  // VIP カードで受け取ったチケット（アンケートなし）。回答の件数とは分けて出す
   const vipCount = responses.filter((r) => r.vip).length;
   // 開催日ごとの件数（2 日目からは日ごとに分けて出す）
   const byDay = new Map<string, { answered: number; vip: number; redeemed: number }>();
@@ -51,7 +52,7 @@ export default async function ResponsesPage() {
       <StaffTabs current="survey" />
 
       <SurveyQrButton />
-      <VipQrButton />
+      <VipCardButton path={vipCardPath()} />
 
       {allowReanswer() && (
         <p role="status" className="mb-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-100">
@@ -111,7 +112,7 @@ export default async function ResponsesPage() {
                 </summary>
                 <div className="flex flex-col gap-3 border-t border-zinc-200 p-3 dark:border-zinc-800">
                   {r.vip ? (
-                    <p className="text-sm text-zinc-500">担当者が VIP 用 QR で発行したチケットです。アンケートの回答はありません。</p>
+                    <p className="text-sm text-zinc-500">VIPカードで受け取ったチケットです。アンケートの回答はありません。</p>
                   ) : (
                     <>
                       <SurveyAnswers answers={r.answers} />

@@ -31,7 +31,7 @@ export default async function TicketPage(props: PageProps<"/survey/ticket/[token
   return (
     <main className="mx-auto flex w-full max-w-lg flex-col gap-6 p-4 pb-6">
       {ticket.vip ? (
-        // 担当者が VIP 用 QR で発行したチケット（アンケートには答えていない）
+        // VIP カードで受け取ったチケット（アンケートには答えていない）
         <p className="mt-4 text-center text-sm font-semibold text-roast">ご来場ありがとうございます</p>
       ) : alreadyAnswered ? (
         // 回答済みの来場者証を読み直したときは、今答えたのではないと分かるようにする

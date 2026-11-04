@@ -99,13 +99,15 @@ export function allowReanswer() {
 // チケットの token（crypto.randomUUID() の値）
 export const TICKET_TOKEN_PATTERN = /^[0-9a-f-]{36}$/;
 
-// 読み取った QR がこのアプリのチケットの URL（VIP 用 QR など）なら、そのパスを返す
-export function ticketPathFromQr(raw: string, selfHost: string): string | null {
+// 読み取った QR がこのアプリの URL で、アンケートを通さずに開いてよいもの（チケット・VIP カード）なら、そのパスを返す
+export function appPathFromQr(raw: string, selfHost: string): string | null {
   const text = raw.trim();
   if (!URL.canParse(text)) return null;
   const url = new URL(text);
+  if (url.host !== selfHost) return null;
+  if (url.pathname === "/survey/vip") return `/survey/vip${url.search}`;
   const token = url.pathname.match(/^\/survey\/ticket\/([^/]+)$/)?.[1];
-  return url.host === selfHost && token && TICKET_TOKEN_PATTERN.test(token) ? `/survey/ticket/${token}` : null;
+  return token && TICKET_TOKEN_PATTERN.test(token) ? `/survey/ticket/${token}` : null;
 }
 
 export function ticketNumber(id: number) {
