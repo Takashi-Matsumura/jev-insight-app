@@ -13,7 +13,7 @@ export async function GET() {
     eventDayLabel(r.eventDay),
     time(r.createdAt),
     ticketNumber(r.id),
-    // VIP 用 QR で発行したチケットは、アンケートの回答が空になる
+    // VIP カードで受け取ったチケットは、アンケートの回答が空になる
     r.vip ? "VIP" : "アンケート",
     r.vip ? "" : r.badgeCode,
     r.company,

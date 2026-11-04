@@ -75,6 +75,7 @@ cp .env.local.example .env.local   # TYPESAFE_API_KEY を設定する
 | `DATABASE_PATH` | `./data/insight.db` | SQLite のファイルの場所 |
 | `CF_ACCESS_TEAM_DOMAIN` | （なし） | Cloudflare Access のチームのドメイン（`<チーム名>.cloudflareaccess.com`）。下の「スマホから使う」を参照 |
 | `CF_ACCESS_AUD` | （なし） | 担当者用の画面を守っている Access アプリの AUD タグ |
+| `VIP_CARD_KEY` | （なし） | 共通の VIP カードの合言葉。カードの QR（`/survey/vip?key=…`）を読むと、アンケートなしで何度でもコーヒー引換チケットを受け取れます。推測されにくい値にしてください（例: `openssl rand -base64 18 \| tr '+/' '-_'`）。カードの写真が出回ったら値を変えて刷り直すと、前のカードは使えなくなります。未設定なら VIP カードは使えません |
 | `SURVEY_ALLOW_REANSWER` | （なし） | 社内テスト用。`1` にすると、同じ来場者証で何度でもアンケートに答え直せます（その日の前の回答とチケットは消えます）。当日は設定しないでください |
 
 whisper-server と llama-server を起動します。

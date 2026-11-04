@@ -9,6 +9,7 @@ import { getDb, schema } from "@/lib/db";
 import { measure } from "@/lib/metrics";
 import { allowSurveyAction, clientIp, recordNewTicket } from "@/lib/rate-limit";
 import { ALREADY_ANSWERED_PARAM, allowReanswer, eventDay, eventDayLabel, parseAnswers } from "@/lib/survey";
+import { checkVipKey } from "@/lib/vip";
 
 // /survey 配下は来場者に公開する（前段の認証を通さない）。
 // ここには来場者が実行してよい操作だけを置き、DB の行そのものは返さない。
@@ -86,6 +87,34 @@ async function runSubmitSurvey(formData: FormData): Promise<SurveyState> {
   const path = created ? `/survey/ticket/${created.token}` : await answeredTicketPath(badge.code, day);
   if (!path) return { error: "送信できませんでした。もう一度お試しください。" };
   redirect(path);
+}
+
+// 共通の VIP カードの QR から開いた画面で、来場者がボタンを押したときに呼ぶ。
+// アンケートなしで、押すたびに新しいチケットを 1 枚発行する（VIP カードは何度でも使える）。
+// 来場者証の代わりに発行ごとの値を入れるので、来場者証 1 枚につき 1 日 1 枚の制限はかからない
+export async function claimVipTicket(key: string): Promise<SurveyState> {
+  return measure("survey:vip", () => runClaimVipTicket(key));
+}
+
+async function runClaimVipTicket(key: string): Promise<SurveyState> {
+  const ip = await clientIp();
+  if (!allowSurveyAction(ip)) return { error: BUSY };
+  if (!checkVipKey(key)) return { error: "このVIPカードは使えません。スタッフにお声がけください。" };
+  const token = crypto.randomUUID();
+  await getDb()
+    .insert(surveyResponses)
+    .values({
+      token,
+      badgeCode: `vip:${crypto.randomUUID()}`,
+      eventDay: eventDay(),
+      company: "",
+      visitorName: "",
+      answers: {},
+      consentAt: new Date(),
+      vip: true,
+    });
+  recordNewTicket(ip);
+  redirect(`/survey/ticket/${token}`);
 }
 
 // コーヒーを渡したときに、担当者が来場者の画面で実行する。すでにお渡し済みなら何もしない。
